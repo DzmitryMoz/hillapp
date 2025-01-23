@@ -1,0 +1,21 @@
+[
+  {
+    "id": "med1",
+    "name": "Парацетамол",
+    "description": "Обезболивающее и жаропонижающее средство.",
+    "standardDosePerKg": 10.0,
+    "maxDose": 1000.0,
+    "minAge": 0.0,
+    "maxAge": 12.0
+  },
+  {
+    "id": "med2",
+    "name": "Ибупрофен",
+    "description": "Нестероидный противовоспалительный препарат.",
+    "standardDosePerKg": 5.0,
+    "maxDose": 800.0,
+    "minAge": 6.0,
+    "maxAge": 18.0
+  }
+
+]

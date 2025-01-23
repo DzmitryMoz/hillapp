@@ -22,24 +22,26 @@ class ForMomsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Для мам'),
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: tips.length,
-        itemBuilder: (context, i) {
-          final item = tips[i];
-          return Card(
-            margin: const EdgeInsets.all(8),
-            child: ListTile(
-              title: Text(item['title']!),
-              subtitle: Text(item['desc']!),
+    return ListView.builder(
+      padding: const EdgeInsets.all(16.0),
+      itemCount: tips.length,
+      itemBuilder: (context, i) {
+        final item = tips[i];
+        return Card(
+          margin: const EdgeInsets.all(8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          elevation: 2,
+          child: ListTile(
+            title: Text(
+              item['title'] ?? '',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-          );
-        },
-      ),
+            subtitle: Text(item['desc'] ?? ''),
+          ),
+        );
+      },
     );
   }
 }

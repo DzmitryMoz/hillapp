@@ -1,21 +1,24 @@
 // lib/screens/home_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../models/health_data.dart';
+import '../calculator/models/calendar_medication.dart';
+import '../calculator/models/calendar_medication_intake.dart';
+import '../calculator/services/calendar_database_service.dart';
 import 'calendar_screen.dart';
 import 'blood_pressure_screen.dart';
-import 'analysis_decryption_screen.dart';
-import 'package:hillapp/calculator/calculator_screen.dart';
-import 'analysis_history_screen.dart';
-import 'support_screen.dart';
-import 'feedback_screen.dart';
-import 'view_feedback_screen.dart';
-import 'analysis_list_screen.dart';
-import '../models/medication.dart';
-import '../models/medication_data.dart';
+import 'medicine_screen.dart';
+import 'for_moms_screen.dart';
+import 'profile_screen.dart';
+
+// Цветовые константы
+const Color kMintLight = Color(0xFF00E5D1);
+const Color kMintDark = Color(0xFF00B4AB);
+const Color kBackground = Color(0xFFE3FDFD);
 
 class HomeScreen extends StatefulWidget {
   final VoidCallback onToggleTheme;
-
   const HomeScreen({Key? key, required this.onToggleTheme}) : super(key: key);
 
   @override
@@ -23,41 +26,195 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  DateTime _selectedDay = DateTime.now();
+  final CalendarDatabaseService _calendarDbService = CalendarDatabaseService();
 
-  final List<Map<String, dynamic>> bpMeasurements = [
-    {
-      'date': DateTime.utc(2023, 10, 28),
-      'systolic': 125,
-      'diastolic': 80,
-      'pulse': 70,
-    },
-    {
-      'date': DateTime.utc(2023, 10, 29),
-      'systolic': 130,
-      'diastolic': 85,
-      'pulse': 75,
-    },
-  ];
+  int _currentIndex = 0;
+
+  late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
-    // При необходимости инициализируйте сервисы
+    _calendarDbService.loadMedications();
+    _pages = [
+      const _HomePage(),
+      const MedicineScreen(),
+      const ForMomsScreen(),
+      ProfileScreen(onToggleTheme: widget.onToggleTheme),
+    ];
   }
 
-  List<Medication> _getPills(DateTime day) {
-    return MedicationData().getMedications(day);
+  void _onTabTapped(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
-  Map<String, dynamic>? get lastBP =>
-      bpMeasurements.isEmpty ? null : bpMeasurements.last;
+  String _getTitle(int index) {
+    switch (index) {
+      case 0:
+        return 'Главная';
+      case 1:
+        return 'Медицина';
+      case 2:
+        return 'Для мам';
+      case 3:
+        return 'Профиль';
+      default:
+        return 'HillApp';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // Верхняя панель оформляем ярким градиентом
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(60),
+        child: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [kMintLight, kMintDark],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: SafeArea(
+            child: Row(
+              children: [
+                const SizedBox(width: 16),
+                // Заголовок
+                Expanded(
+                  child: Text(
+                    _getTitle(_currentIndex),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+
+      // Тело экрана
+      body: IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
+
+      // Нижняя панель навигации
+      bottomNavigationBar: _buildBottomNavBar(context),
+      backgroundColor: kBackground, // Общий фон
+    );
+  }
+
+  Widget _buildBottomNavBar(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Container(
+        height: 60,
+        decoration: BoxDecoration(
+          // Делаем панель явно мятно-бирюзовой
+          gradient: const LinearGradient(
+            colors: [kMintLight, kMintDark],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 8,
+              offset: Offset(0, 4),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(30),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: _onTabTapped,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            selectedItemColor: Colors.white,
+            unselectedItemColor: Colors.white54,
+            showSelectedLabels: true,
+            showUnselectedLabels: true,
+            type: BottomNavigationBarType.fixed,
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home),
+                label: 'Главная',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.local_hospital),
+                label: 'Медицина',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.child_care),
+                label: 'Для мам',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Профиль',
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------- Содержимое главной вкладки ----------------------
+class _HomePage extends StatefulWidget {
+  const _HomePage({Key? key}) : super(key: key);
+
+  @override
+  State<_HomePage> createState() => __HomePageState();
+}
+
+class __HomePageState extends State<_HomePage> {
+  final CalendarDatabaseService _calendarDbService = CalendarDatabaseService();
+
+  DateTime _selectedDay = DateTime.now();
+  Map<String, CalendarMedication> _medicationMap = {};
+  List<CalendarMedicationIntake> _todayMedications = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMedications();
+    _updateTodayMedications();
+  }
+
+  Future<void> _loadMedications() async {
+    final meds = await _calendarDbService.getAllCalendarMedications();
+    setState(() {
+      _medicationMap = {for (var med in meds) med.id: med};
+    });
+  }
+
+  Future<void> _updateTodayMedications() async {
+    final meds = await _calendarDbService.getMedicationsForDay(_selectedDay);
+    setState(() {
+      _todayMedications = meds;
+    });
+  }
 
   void _goFullCalendar() {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const CalendarScreen()),
-    );
+    ).then((_) {
+      _updateTodayMedications();
+      _loadMedications();
+    });
   }
 
   void _goBloodPressure() {
@@ -67,230 +224,56 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _goAnalysis() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AnalysisDecryptionScreen()),
-    );
+  void _goAnalysisDecryption() {
+    Navigator.pushNamed(context, '/analysis_main');
   }
 
-  void _goCalc() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CalculatorScreen()),
-    );
+  void _goMedicationCalculator() {
+    Navigator.pushNamed(context, '/medication_calculator');
   }
 
-  void _goSupport() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const SupportScreen()),
-    );
-  }
-
-  void _goAnalysisHistory() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AnalysisHistoryScreen()),
-    );
-  }
-
-  void _goFeedback() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const FeedbackScreen()),
-    );
-  }
-
-  void _goViewFeedback() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const ViewFeedbackScreen()),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final pillsToday = _getPills(_selectedDay);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Главная'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.brightness_6),
-            onPressed: widget.onToggleTheme,
-          ),
-        ],
-      ),
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Colors.blue),
-              child: Text(
-                'HillApp',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                ),
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('История Анализов'),
-              onTap: () {
-                Navigator.pop(context);
-                _goAnalysisHistory();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.support_agent),
-              title: const Text('Поддержка'),
-              onTap: () {
-                Navigator.pop(context);
-                _goSupport();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.feedback),
-              title: const Text('Оставить Отзыв'),
-              onTap: () {
-                Navigator.pop(context);
-                _goFeedback();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.rate_review),
-              title: const Text('Просмотр Отзывов'),
-              onTap: () {
-                Navigator.pop(context);
-                _goViewFeedback();
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout),
-              title: const Text('Выйти'),
-              onTap: () {
-                Navigator.pop(context);
-                // Реализуйте логику выхода из приложения
-              },
-            ),
-          ],
-        ),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildMiniCalendar(),
-          const SizedBox(height: 10),
-          if (pillsToday.isNotEmpty)
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white70,
-                border: Border.all(color: Colors.blueAccent),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Препараты на выбранный день:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  for (var med in pillsToday)
-                    Text('${med.name} (${med.dosage}) - ${med.time.format(context)}'),
-                ],
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white70,
-                border: Border.all(color: Colors.grey.shade300),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Text('Нет приёма препаратов на этот день.'),
-            ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: _goFullCalendar,
-            icon: const Icon(Icons.calendar_month),
-            label: const Text('Полноценный календарь'),
-          ),
-          const SizedBox(height: 20),
-          if (lastBP != null) ...[
-            Text(
-              'Последний показатель АД: ${lastBP!["systolic"]}/${lastBP!["diastolic"]}  Пульс: ${lastBP!["pulse"]}',
-              style:
-              const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-          ],
-          ElevatedButton.icon(
-            onPressed: _goBloodPressure,
-            icon: const Icon(Icons.monitor_heart),
-            label: const Text('Контроль АД'),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: _goAnalysis,
-            icon: const Icon(Icons.description),
-            label: const Text('Расшифровка анализов'),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: _goCalc,
-            icon: const Icon(Icons.calculate),
-            label: const Text('Калькулятор лекарств'),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // Мини-календарь в стиле карточки
   Widget _buildMiniCalendar() {
     final now = DateTime.now();
     final days = List.generate(7, (i) => DateTime(now.year, now.month, now.day + i));
 
-    return GestureDetector(
-      onTap: _goFullCalendar,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white70,
-          border: Border.all(color: Colors.blueAccent),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: days.map((day) {
-            final isToday = _sameDay(day, DateTime.now());
-            final isSelected = _sameDay(day, _selectedDay);
-            final hasPills = _getPills(day).isNotEmpty;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          )
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: days.map((day) {
+          final isToday = _sameDay(day, now);
+          final isSelected = _sameDay(day, _selectedDay);
 
-            Color bgColor = Colors.grey.shade200;
-            if (isToday) bgColor = Colors.orange.shade300;
-            if (hasPills) bgColor = Colors.green.shade300;
-            if (isSelected) bgColor = Colors.blue.shade300;
+          Color bgColor = Colors.transparent;
+          if (isToday) bgColor = kMintLight.withOpacity(0.2);
+          if (isSelected) bgColor = kMintLight.withOpacity(0.5);
 
-            return GestureDetector(
+          return Flexible(
+            child: GestureDetector(
               onTap: () {
-                setState(() {
-                  _selectedDay = day;
-                });
+                setState(() => _selectedDay = day);
+                _updateTodayMedications();
               },
-              child: Container(
-                width: 48,
-                height: 64,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+                width: 40,
+                height: 60,
                 margin: const EdgeInsets.symmetric(horizontal: 2),
                 decoration: BoxDecoration(
                   color: bgColor,
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 alignment: Alignment.center,
                 child: Column(
@@ -308,16 +291,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-            );
-          }).toList(),
-        ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }
 
-  bool _sameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
+  bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   String _weekdayLabel(int w) {
     switch (w) {
@@ -338,5 +320,216 @@ class _HomeScreenState extends State<HomeScreen> {
       default:
         return '';
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Получение последних показателей из Provider
+    final healthData = Provider.of<HealthData>(context);
+    final latestMeasurement = healthData.latestMeasurement;
+
+    return Container(
+      color: kBackground,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // Мини-календарь
+          _buildMiniCalendar(),
+          const SizedBox(height: 16),
+
+          // Кнопка «Полноценный календарь»
+          _buildGradientButton(
+            icon: Icons.calendar_month,
+            label: 'Полноценный календарь',
+            onTap: _goFullCalendar,
+          ),
+          const SizedBox(height: 16),
+
+          // Приёмы препаратов на день
+          if (_todayMedications.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Text('Нет приёма препаратов на этот день.'),
+            )
+          else
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: kMintLight, width: 1.5),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Препараты на выбранный день:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  for (var med in _todayMedications) _buildMedicationTile(med),
+                ],
+              ),
+            ),
+          const SizedBox(height: 20),
+
+          // Последний показатель АД и ЧСС
+          if (latestMeasurement != null) ...[
+            Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Последний показатель АД и ЧСС:',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Дата: ${_formatDate(latestMeasurement.date)}',
+                      style: const TextStyle(fontSize: 14, color: Colors.grey),
+                    ),
+                    Text(
+                      'АД: ${latestMeasurement.systolic}/${latestMeasurement.diastolic} мм рт. ст.',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    Text(
+                      'ЧСС: ${latestMeasurement.heartRate} уд/мин',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ] else
+            Card(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              color: Colors.white,
+              child: const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Нет данных. Введите последние показатели.',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
+
+          // Кнопки: АД, анализы, калькулятор
+          _buildGradientButton(
+            icon: Icons.monitor_heart,
+            label: 'Контроль АД',
+            onTap: _goBloodPressure,
+          ),
+          const SizedBox(height: 12),
+          _buildGradientButton(
+            icon: Icons.description,
+            label: 'Расшифровка анализов',
+            onTap: _goAnalysisDecryption,
+          ),
+          const SizedBox(height: 12),
+          _buildGradientButton(
+            icon: Icons.calculate,
+            label: 'Калькулятор лекарств',
+            onTap: _goMedicationCalculator,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Отдельный метод для элемента списка препаратов остаётся без изменений
+
+  Widget _buildMedicationTile(CalendarMedicationIntake intake) {
+    final med = _medicationMap[intake.medicationId];
+    final name = med?.name ?? 'Неизвестный препарат';
+    final dosage = med?.dosage ?? '-';
+    final unit = med?.dosageUnit.displayName ?? '';
+    final timeText = intake.time.format(context);
+    final intakeTypeLabel = intake.intakeType.displayName;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 6),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: CircleAvatar(
+          backgroundColor: kMintDark,
+          radius: 14,
+          child: const Icon(Icons.medical_services, color: Colors.white, size: 18),
+        ),
+        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text(
+          'Дозировка: $dosage $unit\nВремя: $timeText, Приём: $intakeTypeLabel',
+        ),
+      ),
+    );
+  }
+
+  // Единый градиентный стиль для кнопок остаётся без изменений
+
+  Widget _buildGradientButton({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      height: 48,
+      child: ElevatedButton.icon(
+        onPressed: onTap,
+        icon: Icon(icon),
+        label: Text(label),
+        style: ElevatedButton.styleFrom(
+          foregroundColor: Colors.white, // Цвет текста/иконок
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          backgroundColor: kMintDark, // Цвет фона кнопки
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final d = date.day.toString().padLeft(2, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final y = date.year.toString();
+    return '$d.$m.$y';
   }
 }

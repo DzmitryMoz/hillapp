@@ -1,19 +1,9 @@
+// lib/screens/blood_pressure_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-
-class Measurement {
-  final DateTime date;
-  final double systolic;
-  final double diastolic;
-  final double heartRate;
-
-  Measurement({
-    required this.date,
-    required this.systolic,
-    required this.diastolic,
-    required this.heartRate,
-  });
-}
+import 'package:provider/provider.dart';
+import '../models/health_data.dart';
 
 class BloodPressureScreen extends StatefulWidget {
   const BloodPressureScreen({Key? key}) : super(key: key);
@@ -23,23 +13,69 @@ class BloodPressureScreen extends StatefulWidget {
 }
 
 class _BloodPressureScreenState extends State<BloodPressureScreen> {
-  final List<Measurement> _measurements = [];
+  final _formKey = GlobalKey<FormState>();
+  final TextEditingController _systolicController = TextEditingController();
+  final TextEditingController _diastolicController = TextEditingController();
+  final TextEditingController _heartRateController = TextEditingController();
+
+  @override
+  void dispose() {
+    _systolicController.dispose();
+    _diastolicController.dispose();
+    _heartRateController.dispose();
+    super.dispose();
+  }
+
+  void _saveData() {
+    if (_formKey.currentState!.validate()) {
+      final systolic = double.parse(_systolicController.text);
+      final diastolic = double.parse(_diastolicController.text);
+      final heartRate = double.parse(_heartRateController.text);
+
+      final newMeasurement = Measurement(
+        date: DateTime.now(),
+        systolic: systolic,
+        diastolic: diastolic,
+        heartRate: heartRate,
+      );
+
+      // Добавление измерения через Provider
+      Provider.of<HealthData>(context, listen: false).addMeasurement(newMeasurement);
+
+      // Очистка полей ввода
+      _systolicController.clear();
+      _diastolicController.clear();
+      _heartRateController.clear();
+
+      // Показ уведомления об успешном сохранении
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Измерение сохранено')),
+      );
+
+      // Навигация обратно на главный экран
+      Navigator.pop(context);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Получение списка измерений из Provider
+    final healthData = Provider.of<HealthData>(context);
+    final measurements = healthData.measurements;
+
     final sysSpots = <FlSpot>[];
     final diaSpots = <FlSpot>[];
     final hrSpots = <FlSpot>[];
 
-    for (int i = 0; i < _measurements.length; i++) {
-      sysSpots.add(FlSpot(i.toDouble(), _measurements[i].systolic));
-      diaSpots.add(FlSpot(i.toDouble(), _measurements[i].diastolic));
-      hrSpots.add(FlSpot(i.toDouble(), _measurements[i].heartRate));
+    for (int i = 0; i < measurements.length; i++) {
+      sysSpots.add(FlSpot(i.toDouble(), measurements[i].systolic));
+      diaSpots.add(FlSpot(i.toDouble(), measurements[i].diastolic));
+      hrSpots.add(FlSpot(i.toDouble(), measurements[i].heartRate));
     }
 
     double minY = double.infinity;
     double maxY = double.negativeInfinity;
-    for (final m in _measurements) {
+    for (final m in measurements) {
       if (m.systolic < minY) minY = m.systolic;
       if (m.diastolic < minY) minY = m.diastolic;
       if (m.heartRate < minY) minY = m.heartRate;
@@ -49,7 +85,7 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
       if (m.heartRate > maxY) maxY = m.heartRate;
     }
 
-    if (_measurements.isEmpty) {
+    if (measurements.isEmpty) {
       minY = 0;
       maxY = 150;
     } else {
@@ -60,6 +96,7 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Контроль АД / ЧСС'),
+        backgroundColor: const Color(0xFF00B4AB), // Используйте ваш цвет
         actions: [
           IconButton(
             onPressed: _deleteAllMeasurements,
@@ -70,6 +107,7 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addMeasurementDialog,
+        backgroundColor: const Color(0xFF00B4AB),
         child: const Icon(Icons.add),
       ),
       body: SingleChildScrollView(
@@ -102,7 +140,7 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
-                  if (_measurements.isEmpty)
+                  if (measurements.isEmpty)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 40),
                       child: Text(
@@ -154,9 +192,9 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
                             ),
                           ),
                           lineBarsData: [
-                            _buildLine(sysSpots, Colors.red),
-                            _buildLine(diaSpots, Colors.blue),
-                            _buildLine(hrSpots, Colors.green),
+                            _buildLine(sysSpots, Colors.red, 'Систолическое'),
+                            _buildLine(diaSpots, Colors.blue, 'Диастолическое'),
+                            _buildLine(hrSpots, Colors.green, 'ЧСС'),
                           ],
                           titlesData: FlTitlesData(
                             leftTitles: AxisTitles(
@@ -188,7 +226,7 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
                 ],
               ),
             ),
-            if (_measurements.isNotEmpty)
+            if (measurements.isNotEmpty)
               Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
@@ -199,13 +237,13 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
                 ),
               ),
             const SizedBox(height: 8),
-            if (_measurements.isNotEmpty)
+            if (measurements.isNotEmpty)
               ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: _measurements.length,
+                itemCount: measurements.length,
                 itemBuilder: (context, index) {
-                  final m = _measurements[index];
+                  final m = measurements[index];
                   return Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     padding: const EdgeInsets.symmetric(
@@ -242,7 +280,7 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
     );
   }
 
-  LineChartBarData _buildLine(List<FlSpot> spots, Color color) {
+  LineChartBarData _buildLine(List<FlSpot> spots, Color color, String label) {
     return LineChartBarData(
       spots: spots,
       isCurved: true,
@@ -257,6 +295,7 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
           );
         },
       ),
+      // Дополнительные настройки, если необходимо
     );
   }
 
@@ -271,27 +310,60 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
         return AlertDialog(
           title: const Text('Добавить измерение'),
           content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  decoration: const InputDecoration(labelText: 'Систолическое'),
-                  keyboardType: TextInputType.number,
-                  onChanged: (val) => syst = double.tryParse(val) ?? 120,
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  decoration: const InputDecoration(labelText: 'Диастолическое'),
-                  keyboardType: TextInputType.number,
-                  onChanged: (val) => diast = double.tryParse(val) ?? 80,
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  decoration: const InputDecoration(labelText: 'ЧСС (уд/мин)'),
-                  keyboardType: TextInputType.number,
-                  onChanged: (val) => hr = double.tryParse(val) ?? 70,
-                ),
-              ],
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _systolicController,
+                    decoration: const InputDecoration(labelText: 'Систолическое'),
+                    keyboardType: TextInputType.number,
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return 'Введите систолическое давление';
+                      }
+                      final num = double.tryParse(val);
+                      if (num == null || num <= 0) {
+                        return 'Введите корректное значение';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _diastolicController,
+                    decoration: const InputDecoration(labelText: 'Диастолическое'),
+                    keyboardType: TextInputType.number,
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return 'Введите диастолическое давление';
+                      }
+                      final num = double.tryParse(val);
+                      if (num == null || num <= 0) {
+                        return 'Введите корректное значение';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: _heartRateController,
+                    decoration: const InputDecoration(labelText: 'ЧСС (уд/мин)'),
+                    keyboardType: TextInputType.number,
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return 'Введите ЧСС';
+                      }
+                      final num = double.tryParse(val);
+                      if (num == null || num <= 0) {
+                        return 'Введите корректное значение';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -301,15 +373,20 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                final meas = Measurement(
-                  date: DateTime.now(),
-                  systolic: syst,
-                  diastolic: diast,
-                  heartRate: hr,
-                );
-                Navigator.pop(ctx, meas);
+                if (_formKey.currentState!.validate()) {
+                  final meas = Measurement(
+                    date: DateTime.now(),
+                    systolic: double.parse(_systolicController.text),
+                    diastolic: double.parse(_diastolicController.text),
+                    heartRate: double.parse(_heartRateController.text),
+                  );
+                  Navigator.pop(ctx, meas);
+                }
               },
               child: const Text('Сохранить'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00B4AB),
+              ),
             ),
           ],
         );
@@ -317,22 +394,43 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
     );
 
     if (newMeas != null) {
-      setState(() {
-        _measurements.add(newMeas);
-      });
+      // Добавление измерения через Provider
+      Provider.of<HealthData>(context, listen: false).addMeasurement(newMeas);
+      // Очистка контроллеров после сохранения
+      _systolicController.clear();
+      _diastolicController.clear();
+      _heartRateController.clear();
     }
   }
 
   void _deleteMeasurement(int index) {
-    setState(() {
-      _measurements.removeAt(index);
-    });
+    Provider.of<HealthData>(context, listen: false).deleteMeasurement(index);
   }
 
   void _deleteAllMeasurements() {
-    setState(() {
-      _measurements.clear();
-    });
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Подтверждение'),
+        content: const Text('Вы уверены, что хотите удалить все измерения?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Отмена'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Provider.of<HealthData>(context, listen: false).deleteAllMeasurements();
+              Navigator.pop(ctx);
+            },
+            child: const Text('Удалить'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   String _formatDate(DateTime date) {

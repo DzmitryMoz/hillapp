@@ -5,7 +5,6 @@ import 'package:uuid/uuid.dart';
 import '../models/analysis.dart';
 import '../models/analysis_result.dart';
 import '../services/history_service.dart';
-import '../services/analysis_service.dart';
 import '../services/user_profile_service.dart';
 
 class InputAnalysisResultScreen extends StatefulWidget {

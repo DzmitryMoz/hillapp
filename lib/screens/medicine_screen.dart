@@ -1,11 +1,11 @@
-// lib/screens/medicina_screen.dart
+// lib/screens/medicine_screen.dart
 
 import 'package:flutter/material.dart';
 
-class MedicinaScreen extends StatelessWidget {
-  const MedicinaScreen({Key? key}) : super(key: key);
+class MedicineScreen extends StatelessWidget {
+  const MedicineScreen({Key? key}) : super(key: key);
 
-  final List<Map<String, String>> info = const [
+  final List<Map<String, String>> items = const [
     {
       'title': 'Справочник лекарств',
       'desc': 'Описание популярных препаратов, инструкции.',
@@ -22,24 +22,26 @@ class MedicinaScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Медицина'),
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16.0),
-        itemCount: info.length,
-        itemBuilder: (context, i) {
-          final item = info[i];
-          return Card(
-            margin: const EdgeInsets.all(8),
-            child: ListTile(
-              title: Text(item['title']!),
-              subtitle: Text(item['desc']!),
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: items.length,
+      itemBuilder: (context, i) {
+        final item = items[i];
+        return Card(
+          margin: const EdgeInsets.all(8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          elevation: 2,
+          child: ListTile(
+            title: Text(
+              item['title'] ?? '',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
-          );
-        },
-      ),
+            subtitle: Text(item['desc'] ?? ''),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "733933547981",
+    "project_id": "hillapp-8a03d",
+    "storage_bucket": "hillapp-8a03d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:733933547981:android:e29a108ee98b2e30345484",
+        "android_client_info": {
+          "package_name": "com.example.hillapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-U6PQzgWAZ8Wej8ftfr75hTMDGFQrcVs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

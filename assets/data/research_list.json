@@ -1,0 +1,25 @@
+[
+  {
+    "id": "research1",
+    "title": "Общий анализ крови",
+    "description": "Описание общего анализа крови.",
+    "indicators": [
+      {
+        "id": "hemoglobin",
+        "name": "Гемоглобин",
+        "unit": "г/дл",
+        "normalMin": 13.5,
+        "normalMax": 17.5
+      },
+      {
+        "id": "glucose",
+        "name": "Глюкоза",
+        "unit": "ммоль/л",
+        "normalMin": 3.9,
+        "normalMax": 5.5
+      }
+
+    ]
+  }
+
+]

@@ -1,13 +1,11 @@
 // lib/screens/analysis_history_screen.dart
 
 import 'package:flutter/material.dart';
-import '../models/analysis_result.dart';
-import '../models/analysis.dart';
-import '../services/history_service.dart';
-import '../services/analysis_service.dart';
-import 'analysis_detail_screen.dart';
-import 'analysis_list_screen.dart';
-import 'package:logger/logger.dart'; // Добавляем импорт для логирования
+import '../services/database_service.dart';
+import '../models/user_input.dart';
+import '../services/research_service.dart';
+import 'analysis_result_screen.dart';
+import 'dart:convert'; // Необходим для использования json.decode
 
 class AnalysisHistoryScreen extends StatefulWidget {
   const AnalysisHistoryScreen({Key? key}) : super(key: key);
@@ -17,113 +15,93 @@ class AnalysisHistoryScreen extends StatefulWidget {
 }
 
 class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen> {
-  final HistoryService _historyService = HistoryService();
-  final AnalysisService _analysisService = AnalysisService();
-  final Logger _logger = Logger(); // Инициализируем Logger
+  final DatabaseService _databaseService = DatabaseService();
+  final ResearchService _researchService = ResearchService();
+  List<Map<String, dynamic>> _history = [];
   bool _isLoading = true;
-  List<AnalysisResult> _history = [];
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadHistory();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadHistory() async {
     try {
-      await _historyService.init();
-      await _analysisService.loadAnalyses();
-      final results = await _historyService.getAllHistory();
+      await _researchService.loadResearches(); // Загрузка исследований
+      final history = await _databaseService.getAllAnalyses();
       setState(() {
-        // Фильтруем результаты, чтобы включить только те, которые соответствуют существующим анализам
-        _history = results.where((result) => _analysisService.getAnalysisById(result.analysisId) != null).toList();
+        _history = history;
         _isLoading = false;
       });
-      _logger.i('История анализов загружена: ${_history.length} записей');
+      print('История анализов загружена: ${_history.length} записей');
     } catch (e) {
-      _logger.e('Ошибка при загрузке истории анализов: $e');
+      // Обработка ошибок
       setState(() {
         _isLoading = false;
       });
-      _showErrorDialog('Ошибка при загрузке истории анализов.');
+      print('Ошибка при загрузке истории анализов: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка при загрузке истории анализов: $e')),
+      );
     }
   }
 
-  Analysis? _getAnalysisById(String id) {
-    return _analysisService.getAnalysisById(id);
-  }
-
-  void _goAnalysisList() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const AnalysisListScreen()),
-    ).then((_) {
-      _loadData();
-    });
-  }
-
-  void _goAnalysisDetail(Analysis analysis) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AnalysisDetailScreen(analysis: analysis),
-      ),
-    ).then((_) {
-      _loadData();
-    });
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Ошибка'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Закрыть'),
-          ),
-        ],
-      ),
+  void _viewResult(Map<String, dynamic> entry) {
+    final userInput = UserInput(
+      userName: entry['userName'],
+      age: entry['age'],
+      weight: entry['weight'],
+      userResults:
+      Map<String, double>.from(json.decode(entry['results'])),
     );
+    final research = _researchService.getResearchById(entry['researchId']); // Исправлено 'researchId'
+
+    if (research != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AnalysisResultScreen(
+            research: research,
+            userInput: userInput,
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Не удалось найти исследование.')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('История Анализов'),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _history.isEmpty
-          ? const Center(child: Text('Нет сохраненных результатов.'))
-          : ListView.builder(
-        itemCount: _history.length,
-        itemBuilder: (context, index) {
-          final item = _history[index];
-          final analysis = _getAnalysisById(item.analysisId);
-          final name = analysis?.name ?? 'Не найден';
-          final unit = analysis?.unit ?? '';
-          return ListTile(
-            title: Text(name),
-            subtitle: Text(
-              'Значение: ${item.value} $unit\nДата: ${item.date.day}.${item.date.month}.${item.date.year}',
-            ),
-            onTap: () {
-              if (analysis != null) {
-                _goAnalysisDetail(analysis);
-              }
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _goAnalysisList,
-        child: const Icon(Icons.add),
-        tooltip: 'Добавить Анализ',
-      ),
-    );
+        appBar: AppBar(
+          title: const Text('История Анализов'),
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _history.isEmpty
+            ? const Center(child: Text('История анализов пуста.'))
+            : ListView.builder(
+          itemCount: _history.length,
+          itemBuilder: (context, index) {
+            final entry = _history[index];
+            final date = DateTime.parse(entry['date']);
+            final formattedDate =
+                "${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
+
+            final research = _researchService.getResearchById(entry['researchId']); // Определение исследования
+
+            return ListTile(
+              title: Text(research?.title ?? 'Неизвестное исследование'),
+              subtitle: Text(
+                  'Пользователь: ${entry['userName']}\nДата: $formattedDate'),
+              trailing: const Icon(Icons.arrow_forward),
+              onTap: () => _viewResult(entry),
+            );
+          },
+        ));
   }
 }
