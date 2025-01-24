@@ -40,7 +40,7 @@ dev_dependencies:
 flutter:
   assets:
     - assets/images/
-    - assets/data/research_list.json
     - assets/data/medications.json
     - assets/icons/register.svg
+    - lib/analysis/data/analysis_data.json
   uses-material-design: true

@@ -19,9 +19,11 @@ import 'screens/support_screen.dart';
 import 'screens/blood_pressure_screen.dart';
 import 'screens/feedback_screen.dart';
 import 'screens/view_feedback_screen.dart';
-import 'screens/analysis_main_screen.dart';
-import 'screens/analysis_history_screen.dart';
 import 'screens/profile_screen.dart'; // Импортируем ProfileScreen
+
+// ВАЖНО: Теперь импортируем экраны расшифровки из папки `analysis/`
+import 'analysis/screens/analysis_main_screen.dart';
+import 'analysis/screens/analysis_history_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
