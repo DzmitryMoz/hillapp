@@ -2,55 +2,105 @@
 
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'package:flutter/foundation.dart'; // Для kDebugMode (логирование)
 
 class AnalysisHistoryDB {
   static final AnalysisHistoryDB _instance = AnalysisHistoryDB._internal();
   factory AnalysisHistoryDB() => _instance;
-
   AnalysisHistoryDB._internal();
 
-  Database? _db;
+  Database? _database;
 
+  /// Создаём или получаем базу
   Future<Database> get database async {
-    if (_db != null) return _db!;
-    _db = await _initDB('analysis_history.db');
-    return _db!;
+    if (_database != null) return _database!;
+    _database = await _initDB('analysis_history.db');
+    return _database!;
   }
 
-  Future<Database> _initDB(String fileName) async {
+  Future<Database> _initDB(String file) async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, fileName);
+    final path = join(dbPath, file);
+
+    if (kDebugMode) {
+      print('Инициализация базы: $path');
+    }
 
     return await openDatabase(
       path,
       version: 1,
-      onCreate: _onCreate,
+      onCreate: _createDB,
     );
   }
 
-  Future<void> _onCreate(Database db, int version) async {
+  Future<void> _createDB(Database db, int version) async {
+    if (kDebugMode) {
+      print('Создаём таблицу history (если не существует)');
+    }
     await db.execute('''
-      CREATE TABLE AnalysisHistory (
+      CREATE TABLE IF NOT EXISTS history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date TEXT,
         patientName TEXT,
-        patientSex TEXT,
         patientAge INTEGER,
+        patientSex TEXT,
         researchId TEXT,
         results TEXT
       )
     ''');
   }
 
-  Future<int> insertRecord(Map<String,dynamic> record) async {
+  /// Получить все записи
+  Future<List<Map<String, dynamic>>> getAllRecords() async {
     final db = await database;
-    return await db.insert('AnalysisHistory', record);
+    try {
+      // ВАЖНО: "SELECT * FROM" (с пробелом)
+      const query = 'SELECT * FROM history ORDER BY date DESC';
+      if (kDebugMode) {
+        print('Выполняем запрос: $query');
+      }
+      return await db.rawQuery(query);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Ошибка getAllRecords: $e');
+      }
+      rethrow;
+    }
   }
 
-  Future<List<Map<String,dynamic>>> getAllRecords() async {
+  /// Вставить запись
+  Future<int> insertRecord(Map<String, dynamic> record) async {
     final db = await database;
-    return await db.query('AnalysisHistory', orderBy: 'id DESC');
+    try {
+      if (kDebugMode) {
+        print('Вставляем запись: $record');
+      }
+      return await db.insert('history', record);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Ошибка insertRecord: $e');
+      }
+      rethrow;
+    }
   }
 
-// Можно добавить методы удаления / очистки и т.д.
+  /// Удалить запись по id
+  Future<int> deleteRecord(int id) async {
+    final db = await database;
+    try {
+      if (kDebugMode) {
+        print('Удаляем запись id=$id');
+      }
+      return await db.delete(
+        'history',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Ошибка deleteRecord: $e');
+      }
+      rethrow;
+    }
+  }
 }
