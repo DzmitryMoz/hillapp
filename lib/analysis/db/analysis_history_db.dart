@@ -1,5 +1,3 @@
-// lib/analysis/db/analysis_history_db.dart
-
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:flutter/foundation.dart'; // Для kDebugMode (логирование)
@@ -28,8 +26,9 @@ class AnalysisHistoryDB {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,              // <-- Подняли версию до 2
       onCreate: _createDB,
+      onUpgrade: _upgradeDB,   // <-- Добавили миграцию
     );
   }
 
@@ -50,11 +49,31 @@ class AnalysisHistoryDB {
     ''');
   }
 
-  /// Получить все записи
+  /// Вызывается, если версия базы была меньшей, чем сейчас
+  Future<void> _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (kDebugMode) {
+      print('Миграция с версии $oldVersion до $newVersion');
+    }
+    // Если старой таблицы не было (версия 1), создаём её
+    if (oldVersion < 2) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          date TEXT,
+          patientName TEXT,
+          patientAge INTEGER,
+          patientSex TEXT,
+          researchId TEXT,
+          results TEXT
+        )
+      ''');
+    }
+  }
+
+  /// Получить все записи из history
   Future<List<Map<String, dynamic>>> getAllRecords() async {
     final db = await database;
     try {
-      // ВАЖНО: "SELECT * FROM" (с пробелом)
       const query = 'SELECT * FROM history ORDER BY date DESC';
       if (kDebugMode) {
         print('Выполняем запрос: $query');

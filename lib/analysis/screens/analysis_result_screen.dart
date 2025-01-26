@@ -11,8 +11,8 @@ class AnalysisResultScreen extends StatelessWidget {
   final AnalysisService analysisService;
   final String patientName;
   final int patientAge;
-  final String patientSex;
-  final List<Map<String, dynamic>> results;
+  final String patientSex; // 'male' / 'female'
+  final List<Map<String, dynamic>> results; // [{id, name, value, ...}, ...]
 
   const AnalysisResultScreen({
     Key? key,
@@ -80,7 +80,8 @@ class AnalysisResultScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Имя: $patientName', style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text('Имя: $patientName',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
                 Text('Возраст: $patientAge, Пол: $patientSex'),
               ],
             ),
@@ -97,7 +98,8 @@ class AnalysisResultScreen extends StatelessWidget {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+                  onPressed: () =>
+                      Navigator.popUntil(context, (route) => route.isFirst),
                   child: const Text('На главную'),
                 ),
               ),
@@ -118,51 +120,106 @@ class AnalysisResultScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildResultItem(Map<String,dynamic> res, Map<String,dynamic>? research) {
+  /// Строит виджет для одного показателя
+  Widget _buildResultItem(Map<String, dynamic> res, Map<String, dynamic>? research) {
     final id = res['id'];
     final name = res['name'] ?? '';
-    final status = res['status'] ?? '';
-    final value = res['value'];
+    // В вашем коде 'status' может быть заранее сгенерирован,
+    // но мы сейчас хотим вычислять его из JSON.
+    // Если нужно использовать старое значение — оставьте 'final status = res['status']'.
+    // Или вычислим заново в зависимости от нормы:
 
-    // Если у вас есть find indicator
+    final dynamic rawValue = res['value'];
+    double? value;
+    if (rawValue is num) {
+      value = rawValue.toDouble();
+    } else {
+      // Если не число, выводим как строку
+    }
+
+    // Находим описание показателя в JSON (через research)
     final indicator = (research?['indicators'] as List?)?.firstWhere(
           (el) => el['id'] == id,
       orElse: () => null,
     );
 
-    final bgColor = _getBgColorFromStatus(status);
-
+    // Если не нашли — просто выводим
     if (indicator == null) {
       return Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: bgColor,
+          color: Colors.grey.shade200,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Text('$name: Неизвестный показатель'),
+        child: Text('$name: $rawValue (Неизвестный показатель)'),
       );
+    }
+
+    final bgColor = Colors.white; // будет сменяться ниже при статусе?
+    // Получаем нормальные границы
+    final normalRange = indicator['normalRange'] as Map<String, dynamic>?;
+
+    // Извлечём массив [min, max] в зависимости от пола, возраста
+    List<double> range = _findRangeForPatient(normalRange, patientSex, patientAge);
+
+    final double minVal = range[0];
+    final double maxVal = range[1];
+
+    // Определяем статус, причину и рекомендации
+    String computedStatus = 'В норме';
+    String cause = '';
+    String recommendation = '';
+
+    if (value != null) {
+      if (value < minVal) {
+        computedStatus = 'Ниже нормы';
+        cause = indicator['causesLower'] ?? '';
+        recommendation = indicator['recommendationLower'] ?? '';
+      } else if (value > maxVal) {
+        computedStatus = 'Выше нормы';
+        cause = indicator['causesHigher'] ?? '';
+        recommendation = indicator['recommendationHigher'] ?? '';
+      }
+      // Иначе value внутри [minVal, maxVal] => "В норме"
     }
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: bgColor,
+        color: _getBgColorFromStatus(computedStatus),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('$name: $value', style: const TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            '$name: ${value ?? rawValue}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 4),
-          Text('Статус: $status'),
-          // ... Можно добавить причины/рекомендации
+          Text('Статус: $computedStatus'),
+          // Показать нормальный диапазон
+          Text('Норма: $minVal – $maxVal'),
+
+          // Если есть причины/рекомендации
+          if (cause.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text('Причины: $cause',
+                style: const TextStyle(color: Colors.redAccent)),
+          ],
+          if (recommendation.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text('Рекомендации: $recommendation',
+                style: const TextStyle(color: Colors.blue)),
+          ],
         ],
       ),
     );
   }
 
+  /// Определяем цвет фона в зависимости от статуса
   Color _getBgColorFromStatus(String status) {
     if (status.contains('В норме')) {
       return Colors.green.shade50;
@@ -170,5 +227,57 @@ class AnalysisResultScreen extends StatelessWidget {
       return Colors.red.shade50;
     }
     return Colors.white;
+  }
+
+  /// Ищем нормальный диапазон с учётом пола и возраста (упрощённый вариант).
+  /// Возвращаем [min, max].
+  /// Если ничего не нашли — вернём [0, 999999].
+  List<double> _findRangeForPatient(
+      Map<String, dynamic>? normalRange,
+      String sex,
+      int age,
+      ) {
+    if (normalRange == null) {
+      return [0, 999999];
+    }
+
+    // Например, в JSON:
+    // "normalRange": {
+    //   "male": { "adult": [4.0, 9.0] },
+    //   "female": { "adult": [4.0, 9.0] }
+    // }
+    // Пытаемся взять normalRange[sex], затем "adult" или "any"
+    if (normalRange.containsKey(sex)) {
+      final sexMap = normalRange[sex];
+      if (sexMap is Map<String, dynamic>) {
+        // Пытаемся взять "adult"
+        if (sexMap.containsKey('adult')) {
+          final list = sexMap['adult'];
+          return _parseRangeList(list);
+        } else if (sexMap.containsKey('any')) {
+          final list = sexMap['any'];
+          return _parseRangeList(list);
+        }
+      }
+    }
+
+    // Если не нашли — пробуем "any" в корне
+    if (normalRange.containsKey('any')) {
+      final list = normalRange['any'];
+      return _parseRangeList(list);
+    }
+
+    // Иначе [0..999999] как fallback
+    return [0, 999999];
+  }
+
+  /// Преобразует список [минимум, максимум] из dynamic в List<double>
+  List<double> _parseRangeList(dynamic list) {
+    if (list is List && list.length == 2) {
+      final double minVal = (list[0] as num).toDouble();
+      final double maxVal = (list[1] as num).toDouble();
+      return [minVal, maxVal];
+    }
+    return [0, 999999];
   }
 }
