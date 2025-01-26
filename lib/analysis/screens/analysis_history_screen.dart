@@ -47,6 +47,47 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen> {
     }
   }
 
+  Future<void> _deleteRecord(BuildContext context, int id) async {
+    try {
+      final db = AnalysisHistoryDB();
+      await db.deleteRecord(id);
+      await _loadRecords();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Анализ удалён')),
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Ошибка при удалении: $e');
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка при удалении: $e')),
+      );
+    }
+  }
+
+  void _showDeleteDialog(BuildContext context, int id) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Удалить анализ'),
+        content: const Text('Вы уверены, что хотите удалить этот анализ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _deleteRecord(context, id);
+            },
+            child: const Text('Удалить', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -71,7 +112,8 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen> {
     );
   }
 
-  Widget _buildHistoryItem(Map<String,dynamic> item) {
+  Widget _buildHistoryItem(Map<String, dynamic> item) {
+    final id = item['id'];
     final date = item['date'] ?? '';
     final pName = item['patientName'] ?? '';
     final pSex = item['patientSex'] ?? '';
@@ -80,7 +122,10 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen> {
 
     return Card(
       child: ListTile(
-        title: Text('Дата: $date', style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          'Дата: $date',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         subtitle: Text('Пациент: $pName, $pAge лет, $pSex\nИсследование: $rId'),
         onTap: () {
           Navigator.push(
@@ -88,8 +133,19 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen> {
             MaterialPageRoute(
               builder: (_) => AnalysisHistoryDetailScreen(item: item),
             ),
-          ).then((_) => _loadRecords());
+          ).then((_) {
+            // Перезагрузим список, если вдруг запись удалили
+            _loadRecords();
+          });
         },
+        trailing: IconButton(
+          icon: const Icon(Icons.delete, color: Colors.red),
+          onPressed: () {
+            if (id is int) {
+              _showDeleteDialog(context, id);
+            }
+          },
+        ),
       ),
     );
   }
