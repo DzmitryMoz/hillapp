@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:provider/provider.dart'; // Добавлено
-import 'models/health_data.dart';         // Добавлено
+import 'package:provider/provider.dart';
+import 'models/health_data.dart';
 import 'utils/theme_manager.dart';
 
 // Импорт экранов калькулятора
@@ -12,16 +12,14 @@ import 'calculator/screens/calculation_history_screen.dart';
 
 // Импорт остальных экранов
 import 'screens/home_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/register_screen.dart';
 import 'screens/calendar_screen.dart';
 import 'screens/support_screen.dart';
 import 'screens/blood_pressure_screen.dart';
 import 'screens/feedback_screen.dart';
 import 'screens/view_feedback_screen.dart';
-import 'screens/profile_screen.dart'; // Импортируем ProfileScreen
+import 'screens/profile_screen.dart';
 
-// ВАЖНО: Теперь импортируем экраны расшифровки из папки `analysis/`
+// Импорт экранов для расшифровки анализов
 import 'analysis/screens/analysis_main_screen.dart';
 import 'analysis/screens/analysis_history_screen.dart';
 
@@ -46,7 +44,7 @@ class _HillAppState extends State<HillApp> {
   /// Текущее состояние темы: светлая или тёмная
   ThemeMode _themeMode = ThemeMode.light;
 
-  /// Переключатель темы
+  /// Переключатель темы (если понадобится в будущем)
   void _toggleTheme() {
     setState(() {
       _themeMode =
@@ -72,19 +70,16 @@ class _HillAppState extends State<HillApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: const [
-        Locale('ru', ''), // Русский
-        Locale('en', ''), // Английский
-        // Добавьте другие поддерживаемые языки здесь
+        Locale('ru', ''),
+        Locale('en', ''),
       ],
 
-      /// Начальный экран
-      initialRoute: '/login',
+      /// Начальный экран (заменён на '/home')
+      initialRoute: '/home',
 
-      /// Словарь маршрутов
+      /// Словарь маршрутов (удалены маршруты логина и регистрации)
       routes: {
-        '/login': (context) => LoginScreen(onToggleTheme: _toggleTheme),
-        '/register': (context) => RegisterScreen(onToggleTheme: _toggleTheme),
-        '/home': (context) => HomeScreen(onToggleTheme: _toggleTheme),
+        '/home': (context) => const HomeScreen(),
         '/calendar': (context) => const CalendarScreen(),
 
         // Экран калькулятора лекарств и история расчётов
@@ -104,7 +99,7 @@ class _HillAppState extends State<HillApp> {
         '/analysis_history': (context) => const AnalysisHistoryScreen(),
 
         // Новый маршрут для ProfileScreen
-        '/profile': (context) => ProfileScreen(onToggleTheme: _toggleTheme),
+        '/profile': (context) => const ProfileScreen(),
       },
     );
   }

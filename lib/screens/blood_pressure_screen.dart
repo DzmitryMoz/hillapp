@@ -39,271 +39,21 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
         heartRate: heartRate,
       );
 
-      // Добавление измерения через Provider
       Provider.of<HealthData>(context, listen: false).addMeasurement(newMeasurement);
 
-      // Очистка полей ввода
       _systolicController.clear();
       _diastolicController.clear();
       _heartRateController.clear();
 
-      // Показ уведомления об успешном сохранении
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Измерение сохранено')),
       );
 
-      // Навигация обратно на главный экран
       Navigator.pop(context);
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // Получение списка измерений из Provider
-    final healthData = Provider.of<HealthData>(context);
-    final measurements = healthData.measurements;
-
-    final sysSpots = <FlSpot>[];
-    final diaSpots = <FlSpot>[];
-    final hrSpots = <FlSpot>[];
-
-    for (int i = 0; i < measurements.length; i++) {
-      sysSpots.add(FlSpot(i.toDouble(), measurements[i].systolic));
-      diaSpots.add(FlSpot(i.toDouble(), measurements[i].diastolic));
-      hrSpots.add(FlSpot(i.toDouble(), measurements[i].heartRate));
-    }
-
-    double minY = double.infinity;
-    double maxY = double.negativeInfinity;
-    for (final m in measurements) {
-      if (m.systolic < minY) minY = m.systolic;
-      if (m.diastolic < minY) minY = m.diastolic;
-      if (m.heartRate < minY) minY = m.heartRate;
-
-      if (m.systolic > maxY) maxY = m.systolic;
-      if (m.diastolic > maxY) maxY = m.diastolic;
-      if (m.heartRate > maxY) maxY = m.heartRate;
-    }
-
-    if (measurements.isEmpty) {
-      minY = 0;
-      maxY = 150;
-    } else {
-      minY = (minY - 10).clamp(0, 9999);
-      maxY += 10;
-    }
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Контроль АД / ЧСС'),
-        backgroundColor: const Color(0xFF00B4AB), // Используйте ваш цвет
-        actions: [
-          IconButton(
-            onPressed: _deleteAllMeasurements,
-            icon: const Icon(Icons.delete),
-            tooltip: 'Удалить все данные',
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addMeasurementDialog,
-        backgroundColor: const Color(0xFF00B4AB),
-        child: const Icon(Icons.add),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 4,
-                    spreadRadius: 2,
-                    offset: Offset(0, 2),
-                  )
-                ],
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    'График АД и ЧСС',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  if (measurements.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 40),
-                      child: Text(
-                        'Нет данных для отображения',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    )
-                  else
-                    AspectRatio(
-                      aspectRatio: 1.3,
-                      child: LineChart(
-                        LineChartData(
-                          minY: minY,
-                          maxY: maxY,
-                          lineTouchData: LineTouchData(
-                            enabled: true,
-                            touchTooltipData: LineTouchTooltipData(
-                              tooltipRoundedRadius: 8,
-                              getTooltipItems: (touchedSpots) {
-                                return touchedSpots.map((spot) {
-                                  switch (spot.barIndex) {
-                                    case 0:
-                                      return LineTooltipItem(
-                                        'Сист: ${spot.y.toStringAsFixed(0)}',
-                                        const TextStyle(
-                                          color: Colors.red,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      );
-                                    case 1:
-                                      return LineTooltipItem(
-                                        'Диаст: ${spot.y.toStringAsFixed(0)}',
-                                        const TextStyle(
-                                          color: Colors.blue,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      );
-                                    default:
-                                      return LineTooltipItem(
-                                        'ЧСС: ${spot.y.toStringAsFixed(0)}',
-                                        const TextStyle(
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      );
-                                  }
-                                }).toList();
-                              },
-                            ),
-                          ),
-                          lineBarsData: [
-                            _buildLine(sysSpots, Colors.red, 'Систолическое'),
-                            _buildLine(diaSpots, Colors.blue, 'Диастолическое'),
-                            _buildLine(hrSpots, Colors.green, 'ЧСС'),
-                          ],
-                          titlesData: FlTitlesData(
-                            leftTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: true),
-                            ),
-                            bottomTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                            rightTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                            topTitles: AxisTitles(
-                              sideTitles: SideTitles(showTitles: false),
-                            ),
-                          ),
-                          gridData: FlGridData(show: true),
-                          borderData: FlBorderData(
-                            show: true,
-                            border: Border(
-                              left: const BorderSide(color: Colors.black12),
-                              bottom: const BorderSide(color: Colors.black12),
-                              right: BorderSide(color: Colors.grey.shade200),
-                              top: BorderSide(color: Colors.grey.shade200),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            if (measurements.isNotEmpty)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Мои показатели:',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            const SizedBox(height: 8),
-            if (measurements.isNotEmpty)
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: measurements.length,
-                itemBuilder: (context, index) {
-                  final m = measurements[index];
-                  return Container(
-                    margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade300),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Дата: ${_formatDate(m.date)}, '
-                                'Сист: ${m.systolic.toStringAsFixed(0)}, '
-                                'Диаст: ${m.diastolic.toStringAsFixed(0)}, '
-                                'ЧСС: ${m.heartRate.toStringAsFixed(0)}',
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () => _deleteMeasurement(index),
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  LineChartBarData _buildLine(List<FlSpot> spots, Color color, String label) {
-    return LineChartBarData(
-      spots: spots,
-      isCurved: true,
-      barWidth: 3,
-      gradient: LinearGradient(colors: [color.withOpacity(0.3), color]),
-      dotData: FlDotData(
-        show: true,
-        getDotPainter: (spot, _, __, ___) {
-          return LabelDotPainter(
-            label: spot.y.toStringAsFixed(0),
-            dotColor: color,
-          );
-        },
-      ),
-      // Дополнительные настройки, если необходимо
-    );
-  }
-
   void _addMeasurementDialog() async {
-    double syst = 120;
-    double diast = 80;
-    double hr = 70;
-
     final newMeas = await showDialog<Measurement>(
       context: context,
       builder: (ctx) {
@@ -394,9 +144,7 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
     );
 
     if (newMeas != null) {
-      // Добавление измерения через Provider
       Provider.of<HealthData>(context, listen: false).addMeasurement(newMeas);
-      // Очистка контроллеров после сохранения
       _systolicController.clear();
       _diastolicController.clear();
       _heartRateController.clear();
@@ -433,11 +181,308 @@ class _BloodPressureScreenState extends State<BloodPressureScreen> {
     );
   }
 
+  // Обновлённая функция для форматирования даты и времени
   String _formatDate(DateTime date) {
     final d = date.day.toString().padLeft(2, '0');
     final m = date.month.toString().padLeft(2, '0');
     final y = date.year.toString();
-    return '$d.$m.$y';
+    final h = date.hour.toString().padLeft(2, '0');
+    final min = date.minute.toString().padLeft(2, '0');
+    return '$d.$m.$y $h:$min';
+  }
+
+  // Метод для построения элемента легенды
+  Widget _buildLegendItem(Color color, String label) {
+    return Row(
+      children: [
+        Container(
+          width: 10,
+          height: 10,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 10),
+        ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final healthData = Provider.of<HealthData>(context);
+    final measurements = healthData.measurements;
+
+    final sysSpots = <FlSpot>[];
+    final diaSpots = <FlSpot>[];
+    final hrSpots = <FlSpot>[];
+
+    for (int i = 0; i < measurements.length; i++) {
+      sysSpots.add(FlSpot(i.toDouble(), measurements[i].systolic));
+      diaSpots.add(FlSpot(i.toDouble(), measurements[i].diastolic));
+      hrSpots.add(FlSpot(i.toDouble(), measurements[i].heartRate));
+    }
+
+    double minY = double.infinity;
+    double maxY = double.negativeInfinity;
+    for (final m in measurements) {
+      if (m.systolic < minY) minY = m.systolic;
+      if (m.diastolic < minY) minY = m.diastolic;
+      if (m.heartRate < minY) minY = m.heartRate;
+
+      if (m.systolic > maxY) maxY = m.systolic;
+      if (m.diastolic > maxY) maxY = m.diastolic;
+      if (m.heartRate > maxY) maxY = m.heartRate;
+    }
+
+    if (measurements.isEmpty) {
+      minY = 0;
+      maxY = 150;
+    } else {
+      minY = (minY - 10).clamp(0, 9999);
+      maxY += 10;
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Контроль АД / ЧСС'),
+        backgroundColor: const Color(0xFF00B4AB),
+        actions: [
+          IconButton(
+            onPressed: _deleteAllMeasurements,
+            icon: const Icon(Icons.delete),
+            tooltip: 'Удалить все данные',
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addMeasurementDialog,
+        backgroundColor: const Color(0xFF00B4AB),
+        child: const Icon(Icons.add),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 4,
+                    spreadRadius: 2,
+                    offset: Offset(0, 2),
+                  )
+                ],
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'График АД и ЧСС',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  if (measurements.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Text(
+                        'Нет данных для отображения',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
+                  else
+                    Column(
+                      children: [
+                        // График с отключёнными подписями осей
+                        AspectRatio(
+                          aspectRatio: 1.3,
+                          child: LineChart(
+                            LineChartData(
+                              minY: minY,
+                              maxY: maxY,
+                              lineTouchData: LineTouchData(
+                                enabled: true,
+                                touchTooltipData: LineTouchTooltipData(
+                                  tooltipRoundedRadius: 8,
+                                  getTooltipItems: (touchedSpots) {
+                                    return touchedSpots.map((spot) {
+                                      switch (spot.barIndex) {
+                                        case 0:
+                                          return LineTooltipItem(
+                                            'Сист: ${spot.y.toStringAsFixed(0)}',
+                                            const TextStyle(
+                                              color: Colors.red,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          );
+                                        case 1:
+                                          return LineTooltipItem(
+                                            'Диаст: ${spot.y.toStringAsFixed(0)}',
+                                            const TextStyle(
+                                              color: Colors.blue,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          );
+                                        default:
+                                          return LineTooltipItem(
+                                            'ЧСС: ${spot.y.toStringAsFixed(0)}',
+                                            const TextStyle(
+                                              color: Colors.green,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          );
+                                      }
+                                    }).toList();
+                                  },
+                                ),
+                              ),
+                              lineBarsData: [
+                                _buildLine(sysSpots, Colors.red, 'Систолическое'),
+                                _buildLine(diaSpots, Colors.blue, 'Диастолическое'),
+                                _buildLine(hrSpots, Colors.green, 'ЧСС'),
+                              ],
+                              titlesData: FlTitlesData(
+                                leftTitles: AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                bottomTitles: AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                rightTitles: AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                                topTitles: AxisTitles(
+                                  sideTitles: SideTitles(showTitles: false),
+                                ),
+                              ),
+                              gridData: FlGridData(show: true),
+                              borderData: FlBorderData(
+                                show: true,
+                                border: Border(
+                                  left: const BorderSide(color: Colors.black12),
+                                  bottom: const BorderSide(color: Colors.black12),
+                                  right: BorderSide(color: Colors.grey.shade200),
+                                  top: BorderSide(color: Colors.grey.shade200),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Легенда графика
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            _buildLegendItem(Colors.red, 'Сист.'),
+                            const SizedBox(width: 8),
+                            _buildLegendItem(Colors.blue, 'Диаст.'),
+                            const SizedBox(width: 8),
+                            _buildLegendItem(Colors.green, 'ЧСС'),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        // Горизонтальная строка с данными (теперь ниже выводится дата и время)
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: measurements.map((m) {
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 8),
+                                child: Text(
+                                  '${_formatDate(m.date)}',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            ),
+            if (measurements.isNotEmpty)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Мои показатели:',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 8),
+            if (measurements.isNotEmpty)
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: measurements.length,
+                itemBuilder: (context, index) {
+                  final m = measurements[index];
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Дата и время: ${_formatDate(m.date)}, '
+                                'Сист: ${m.systolic.toStringAsFixed(0)}, '
+                                'Диаст: ${m.diastolic.toStringAsFixed(0)}, '
+                                'ЧСС: ${m.heartRate.toStringAsFixed(0)}',
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => _deleteMeasurement(index),
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  LineChartBarData _buildLine(List<FlSpot> spots, Color color, String label) {
+    return LineChartBarData(
+      spots: spots,
+      isCurved: true,
+      barWidth: 3,
+      gradient: LinearGradient(colors: [color.withOpacity(0.3), color]),
+      dotData: FlDotData(
+        show: true,
+        getDotPainter: (spot, _, __, ___) {
+          return LabelDotPainter(
+            label: spot.y.toStringAsFixed(0),
+            dotColor: color,
+          );
+        },
+      ),
+    );
   }
 }
 

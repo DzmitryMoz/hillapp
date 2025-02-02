@@ -7,120 +7,59 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../utils/app_colors.dart'; // Файл с константами цветов
-import 'edit_medical_info_screen.dart'; // Импортируем EditMedicalInfoScreen
+import '../utils/app_colors.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final VoidCallback onToggleTheme;
-
-  const ProfileScreen({Key? key, required this.onToggleTheme}) : super(key: key);
+  const ProfileScreen({Key? key}) : super(key: key);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Пример данных пользователя
+  // Основная информация пользователя
   String userName = "Иван Иванов";
-  String email = "ivan.ivanov@example.com";
-  String gender = "Мужской";
-  DateTime birthDate = DateTime(1990, 5, 20);
-  double height = 175.0; // в сантиметрах
-  double weight = 70.0;  // в килограммах
-
-  // Медицинские данные
-  List<String> chronicDiseases = ["Гипертония"];
-  List<String> allergies = ["Пенициллин"];
 
   // Для аватарки
   File? _avatarImage;
 
-  // Для уведомлений и языка
+  // Настройки приложения
   bool notificationsEnabled = true;
   String selectedLanguage = "Русский";
-
-  // Переключение темы
-  void _toggleTheme() {
-    widget.onToggleTheme();
-  }
 
   // Выбор аватарки
   Future<void> _pickAvatar() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 50);
+    final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery, imageQuality: 50);
 
     if (pickedFile != null) {
       setState(() {
         _avatarImage = File(pickedFile.path);
       });
-      // Здесь вы можете загрузить аватарку на сервер или сохранить локально
+      // Здесь можно добавить сохранение аватарки локально или на сервере
     }
   }
 
   // Смена имени
   Future<void> _changeName() async {
-    String? newName = await _showInputDialog("Смена имени", "Введите новое имя", userName);
+    String? newName =
+    await _showInputDialog("Смена имени", "Введите новое имя", userName);
     if (newName != null && newName.trim().isNotEmpty) {
       setState(() {
         userName = newName.trim();
       });
-      // Здесь вы можете обновить имя на сервере
+      // Здесь можно добавить обновление имени на сервере, если потребуется
     }
   }
 
-  // Смена Email
-  Future<void> _changeEmail() async {
-    String? newEmail = await _showInputDialog("Смена Email", "Введите новый Email", email);
-    if (newEmail != null && newEmail.trim().isNotEmpty) {
-      // Валидация Email
-      if (!_isValidEmail(newEmail.trim())) {
-        _showErrorDialog("Некорректный Email");
-        return;
-      }
-      setState(() {
-        email = newEmail.trim();
-      });
-      // Здесь вы можете обновить Email на сервере
-    }
-  }
-
-  // Смена пароля
-  Future<void> _changePassword() async {
-    String? currentPassword = await _showInputDialog("Смена пароля", "Введите текущий пароль", "", obscureText: true);
-    if (currentPassword == null || currentPassword.isEmpty) return;
-
-    String? newPassword = await _showInputDialog("Смена пароля", "Введите новый пароль", "", obscureText: true);
-    if (newPassword == null || newPassword.isEmpty) return;
-
-    String? confirmPassword = await _showInputDialog("Смена пароля", "Подтвердите новый пароль", "", obscureText: true);
-    if (confirmPassword == null || confirmPassword.isEmpty) return;
-
-    if (newPassword != confirmPassword) {
-      _showErrorDialog("Пароли не совпадают");
-      return;
-    }
-
-    // Здесь вы можете проверить текущий пароль и обновить его на сервере
-    _showSuccessDialog("Пароль успешно изменён");
-  }
-
-  // Удаление аккаунта
-  Future<void> _deleteAccount() async {
-    bool? confirm = await _showConfirmationDialog("Удаление аккаунта", "Вы уверены, что хотите удалить аккаунт? Все ваши данные будут удалены.");
-    if (confirm != null && confirm) {
-      // Здесь вы можете реализовать логику удаления аккаунта на сервере
-      _showSuccessDialog("Аккаунт успешно удалён");
-      // Например, выйти из приложения или перенаправить на экран регистрации
-    }
-  }
-
-  // Настройка уведомлений
+  // Переключение уведомлений
   void _toggleNotifications(bool? value) {
     if (value == null) return;
     setState(() {
       notificationsEnabled = value;
     });
-    // Здесь вы можете обновить настройки уведомлений на сервере или локально
+    // Здесь можно сохранить настройки уведомлений
   }
 
   // Выбор языка
@@ -147,40 +86,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         selectedLanguage = language;
       });
-      // Здесь вы можете обновить язык приложения
+      // Здесь можно обновить язык приложения
     }
   }
 
-  // Кнопка для изменения медицинской информации
-  Future<void> _editMedicalInfo() async {
-    final updatedData = await Navigator.push<Map<String, dynamic>>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => EditMedicalInfoScreen(
-          gender: gender,
-          birthDate: birthDate,
-          height: height,
-          weight: weight,
-          chronicDiseases: chronicDiseases,
-          allergies: allergies,
-        ),
-      ),
-    );
-
-    if (updatedData != null) {
-      setState(() {
-        gender = updatedData['gender'] as String;
-        birthDate = updatedData['birthDate'] as DateTime;
-        height = updatedData['height'] as double;
-        weight = updatedData['weight'] as double;
-        chronicDiseases = List<String>.from(updatedData['chronicDiseases'] as List<dynamic>);
-        allergies = List<String>.from(updatedData['allergies'] as List<dynamic>);
-      });
-      _showSuccessDialog("Медицинская информация успешно обновлена.");
-    }
-  }
-
-  // FAQ
+  // Открытие FAQ
   Future<void> _openFAQ() async {
     const faqUrl = 'https://yourapp.com/faq'; // Замените на реальный URL
     if (await canLaunch(faqUrl)) {
@@ -190,10 +100,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Обратная связь
+  // Открытие обратной связи
   Future<void> _openFeedback() async {
-    // Здесь вы можете реализовать форму обратной связи или открыть email
-    const emailUrl = 'mailto:support@yourapp.com?subject=Обратная связь';
+    const emailUrl =
+        'mailto:support@yourapp.com?subject=Обратная связь'; // Замените при необходимости
     if (await canLaunch(emailUrl)) {
       await launch(emailUrl);
     } else {
@@ -201,36 +111,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // Выход из аккаунта
-  void _logout() {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Выйти из аккаунта?'),
-        content: const Text('Вы уверены, что хотите выйти из аккаунта?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Отмена'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              // Добавьте логику выхода из аккаунта, например, очистку данных и перенаправление на экран входа
-            },
-            child: const Text(
-              'Выйти',
-              style: TextStyle(color: AppColors.kRedAccent),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // Вспомогательные методы
 
-  Future<String?> _showInputDialog(String title, String hint, String initialValue, {bool obscureText = false}) async {
+  Future<String?> _showInputDialog(
+      String title, String hint, String initialValue,
+      {bool obscureText = false}) async {
     String? input;
     TextEditingController controller = TextEditingController(text: initialValue);
     await showDialog<String>(
@@ -239,9 +124,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: Text(title),
         content: TextField(
           obscureText: obscureText,
-          decoration: InputDecoration(
-            hintText: hint,
-          ),
+          decoration: InputDecoration(hintText: hint),
           onChanged: (val) => input = val,
           controller: controller,
         ),
@@ -262,31 +145,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return input;
   }
 
-  Future<bool?> _showConfirmationDialog(String title, String content) async {
-    bool? confirm = false;
-    await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Отмена'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text(
-              'Подтвердить',
-              style: TextStyle(color: AppColors.kRedAccent),
-            ),
-          ),
-        ],
-      ),
-    ).then((value) => confirm = value);
-    return confirm;
-  }
-
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -303,30 +161,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _showSuccessDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Успех'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  bool _isValidEmail(String email) {
-    // Простая валидация Email
-    return RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
-  }
-
   @override
   Widget build(BuildContext context) {
-    // Обновлённые свойства TextTheme
+    // Используем текущую тему для текста
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -334,7 +171,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Аватарка и основная информация
+            // Аватарка и имя
             GestureDetector(
               onTap: _pickAvatar,
               child: Stack(
@@ -343,7 +180,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     radius: 50,
                     backgroundImage: _avatarImage != null
                         ? FileImage(_avatarImage!)
-                        : const AssetImage('assets/images/avatar.png') as ImageProvider,
+                        : const AssetImage('assets/images/avatar.png')
+                    as ImageProvider,
                     backgroundColor: Colors.grey[200],
                   ),
                   Positioned(
@@ -352,7 +190,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: CircleAvatar(
                       backgroundColor: AppColors.kMintDark,
                       radius: 16,
-                      child: const Icon(Icons.camera_alt, size: 18, color: AppColors.kWhite),
+                      child: const Icon(Icons.camera_alt,
+                          size: 18, color: AppColors.kWhite),
                     ),
                   ),
                 ],
@@ -368,48 +207,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              email,
-              style: GoogleFonts.lato(
-                textStyle: textTheme.titleMedium?.copyWith(
-                  color: Colors.grey[700],
-                ),
-              ),
-            ),
             const SizedBox(height: 24),
 
-            // Персональная Информация
-            _buildSectionTitle('Персональная Информация'),
+            // Раздел "Профиль"
+            _buildSectionTitle('Профиль'),
             const SizedBox(height: 8),
             _buildProfileOption(
               icon: Icons.person,
-              label: 'Имя',
-              value: userName,
+              label: 'Изменить имя',
+              value: '',
               onTap: _changeName,
             ),
-            _buildProfileOption(
-              icon: Icons.email,
-              label: 'Email',
-              value: email,
-              onTap: _changeEmail,
-            ),
             const SizedBox(height: 24),
 
-            // Медицинская Информация
-            _buildSectionTitle('Медицинская Информация'),
-            const SizedBox(height: 8),
-            _buildInfoRow('Пол', gender),
-            _buildInfoRow('Дата рождения', "${birthDate.day.toString().padLeft(2, '0')}.${birthDate.month.toString().padLeft(2, '0')}.${birthDate.year}"),
-            _buildInfoRow('Рост', "$height см"),
-            _buildInfoRow('Вес', "$weight кг"),
-            _buildInfoRow('Хронические заболевания', chronicDiseases.isNotEmpty ? chronicDiseases.join(', ') : 'Нет'),
-            _buildInfoRow('Аллергии', allergies.isNotEmpty ? allergies.join(', ') : 'Нет'),
-            const SizedBox(height: 8),
-            _buildEditMedicalInfoButton(),
-            const SizedBox(height: 24),
-
-            // Настройки Приложения
+            // Раздел "Настройки Приложения"
             _buildSectionTitle('Настройки Приложения'),
             const SizedBox(height: 8),
             _buildSwitchOption(
@@ -426,32 +237,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 24),
 
-            // Безопасность
-            _buildSectionTitle('Безопасность'),
-            const SizedBox(height: 8),
-            _buildProfileOption(
-              icon: Icons.lock,
-              label: 'Изменить пароль',
-              value: '',
-              onTap: _changePassword,
-            ),
-            _buildProfileOption(
-              icon: Icons.email,
-              label: 'Изменить Email',
-              value: '',
-              onTap: _changeEmail,
-            ),
-            _buildProfileOption(
-              icon: Icons.delete_forever,
-              label: 'Удалить аккаунт',
-              value: '',
-              onTap: _deleteAccount,
-              isDanger: true,
-            ),
-            const SizedBox(height: 24),
-
-            // Поддержка и Обратная Связь
-            _buildSectionTitle('Поддержка и Обратная Связь'),
+            // Раздел "Поддержка и обратная связь"
+            _buildSectionTitle('Поддержка и обратная связь'),
             const SizedBox(height: 8),
             _buildProfileOption(
               icon: Icons.help_outline,
@@ -463,18 +250,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label: 'Обратная связь',
               onTap: _openFeedback,
             ),
-            const SizedBox(height: 24),
-
-            // Выход из аккаунта
-            _buildLogoutButton(),
           ],
         ),
       ),
     );
   }
 
-  // Вспомогательные методы для создания элементов интерфейса
-
+  // Вспомогательный метод для заголовков разделов
   Widget _buildSectionTitle(String title) {
     return Align(
       alignment: Alignment.centerLeft,
@@ -490,6 +272,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // Универсальный виджет для настроек с иконкой и стрелкой
   Widget _buildProfileOption({
     required IconData icon,
     required String label,
@@ -503,7 +286,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        leading: Icon(icon, color: isDanger ? Colors.red : AppColors.kMintDark),
+        leading: Icon(icon,
+            color: isDanger ? Colors.red : AppColors.kMintDark),
         title: Text(
           label,
           style: GoogleFonts.lato(
@@ -521,45 +305,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         )
-            : const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+            : const Icon(Icons.arrow_forward_ios,
+            size: 16, color: Colors.grey),
         onTap: onTap,
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 4,
-            child: Text(
-              "$label:",
-              style: GoogleFonts.lato(
-                textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 6,
-            child: Text(
-              value,
-              style: GoogleFonts.lato(
-                textStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[700],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // Виджет для переключателей
   Widget _buildSwitchOption({
     required IconData icon,
     required String label,
@@ -583,44 +336,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         value: value,
         onChanged: onChanged,
-      ),
-    );
-  }
-
-  Widget _buildEditMedicalInfoButton() {
-    return ElevatedButton.icon(
-      onPressed: _editMedicalInfo,
-      icon: const Icon(Icons.edit, color: AppColors.kWhite),
-      label: const Text(
-        'Изменить информацию',
-        style: TextStyle(color: AppColors.kWhite),
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.kMintDark,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLogoutButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 50,
-      child: ElevatedButton.icon(
-        onPressed: _logout,
-        icon: const Icon(Icons.logout, color: AppColors.kWhite),
-        label: const Text(
-          'Выйти',
-          style: TextStyle(color: AppColors.kWhite),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.kRedAccent,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
       ),
     );
   }

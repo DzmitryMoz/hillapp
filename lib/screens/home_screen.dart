@@ -18,8 +18,7 @@ const Color kMintDark = Color(0xFF00B4AB);
 const Color kBackground = Color(0xFFE3FDFD);
 
 class HomeScreen extends StatefulWidget {
-  final VoidCallback onToggleTheme;
-  const HomeScreen({Key? key, required this.onToggleTheme}) : super(key: key);
+  const HomeScreen({Key? key}) : super(key: key); // Параметр onToggleTheme удалён
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -29,7 +28,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final CalendarDatabaseService _calendarDbService = CalendarDatabaseService();
 
   int _currentIndex = 0;
-
   late final List<Widget> _pages;
 
   @override
@@ -40,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
       const _HomePage(),
       const MedicineScreen(),
       const ForMomsScreen(),
-      ProfileScreen(onToggleTheme: widget.onToggleTheme),
+      const ProfileScreen(), // Передача onToggleTheme удалена
     ];
   }
 
@@ -68,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Верхняя панель оформляем ярким градиентом
+      // Верхняя панель с градиентным фоном (оставляем без изменений)
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: Container(
@@ -83,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Row(
               children: [
                 const SizedBox(width: 16),
-                // Заголовок
+                // Заголовок экрана
                 Expanded(
                   child: Text(
                     _getTitle(_currentIndex),
@@ -101,13 +99,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
 
-      // Тело экрана
+      // Основное содержимое – переключение между вкладками
       body: IndexedStack(
         index: _currentIndex,
         children: _pages,
       ),
 
-      // Нижняя панель навигации
+      // Нижняя навигационная панель с фоном в цвете кнопок меню
       bottomNavigationBar: _buildBottomNavBar(context),
       backgroundColor: kBackground, // Общий фон
     );
@@ -119,12 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         height: 60,
         decoration: BoxDecoration(
-          // Делаем панель явно мятно-бирюзовой
-          gradient: const LinearGradient(
-            colors: [kMintLight, kMintDark],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: kMintDark, // Фон навигационной панели в цвете кнопок меню
           borderRadius: BorderRadius.circular(30),
           boxShadow: const [
             BoxShadow(
@@ -139,10 +132,10 @@ class _HomeScreenState extends State<HomeScreen> {
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
             onTap: _onTabTapped,
-            backgroundColor: Colors.transparent,
+            backgroundColor: kMintDark,
             elevation: 0,
             selectedItemColor: Colors.white,
-            unselectedItemColor: Colors.white54,
+            unselectedItemColor: Colors.white70,
             showSelectedLabels: true,
             showUnselectedLabels: true,
             type: BottomNavigationBarType.fixed,
@@ -235,7 +228,10 @@ class __HomePageState extends State<_HomePage> {
   // Мини-календарь в стиле карточки
   Widget _buildMiniCalendar() {
     final now = DateTime.now();
-    final days = List.generate(7, (i) => DateTime(now.year, now.month, now.day + i));
+    final days = List.generate(
+      7,
+          (i) => DateTime(now.year, now.month, now.day + i),
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -336,7 +332,8 @@ class __HomePageState extends State<_HomePage> {
           // Мини-календарь
           _buildMiniCalendar(),
           const SizedBox(height: 16),
-
+          Divider(color: Colors.grey.shade300, thickness: 1),
+          const SizedBox(height: 16),
           // Кнопка «Полноценный календарь»
           _buildGradientButton(
             icon: Icons.calendar_month,
@@ -344,7 +341,8 @@ class __HomePageState extends State<_HomePage> {
             onTap: _goFullCalendar,
           ),
           const SizedBox(height: 16),
-
+          Divider(color: Colors.grey.shade300, thickness: 1),
+          const SizedBox(height: 16),
           // Приёмы препаратов на день
           if (_todayMedications.isEmpty)
             Container(
@@ -388,12 +386,14 @@ class __HomePageState extends State<_HomePage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  for (var med in _todayMedications) _buildMedicationTile(med),
+                  for (var med in _todayMedications)
+                    _buildMedicationTile(med),
                 ],
               ),
             ),
           const SizedBox(height: 20),
-
+          Divider(color: Colors.grey.shade300, thickness: 1),
+          const SizedBox(height: 16),
           // Последний показатель АД и ЧСС
           if (latestMeasurement != null) ...[
             Card(
@@ -446,8 +446,10 @@ class __HomePageState extends State<_HomePage> {
                 ),
               ),
             ),
-
-          // Кнопки: АД, анализы, калькулятор
+          const SizedBox(height: 20),
+          Divider(color: Colors.grey.shade300, thickness: 1),
+          const SizedBox(height: 16),
+          // Кнопки действий: Контроль АД, Расшифровка анализов, Калькулятор лекарств
           _buildGradientButton(
             icon: Icons.monitor_heart,
             label: 'Контроль АД',
@@ -470,8 +472,7 @@ class __HomePageState extends State<_HomePage> {
     );
   }
 
-  // Отдельный метод для элемента списка препаратов остаётся без изменений
-
+  // Элемент списка препаратов
   Widget _buildMedicationTile(CalendarMedicationIntake intake) {
     final med = _medicationMap[intake.medicationId];
     final name = med?.name ?? 'Неизвестный препарат';
@@ -486,13 +487,16 @@ class __HomePageState extends State<_HomePage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding:
+        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
           backgroundColor: kMintDark,
           radius: 14,
-          child: const Icon(Icons.medical_services, color: Colors.white, size: 18),
+          child: const Icon(Icons.medical_services,
+              color: Colors.white, size: 18),
         ),
-        title: Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(name,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(
           'Дозировка: $dosage $unit\nВремя: $timeText, Приём: $intakeTypeLabel',
         ),
@@ -500,8 +504,7 @@ class __HomePageState extends State<_HomePage> {
     );
   }
 
-  // Единый градиентный стиль для кнопок остаётся без изменений
-
+  // Универсальный стиль для кнопок (с единым цветом и скруглёнными краями)
   Widget _buildGradientButton({
     required IconData icon,
     required String label,
@@ -520,7 +523,7 @@ class __HomePageState extends State<_HomePage> {
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.symmetric(vertical: 12),
-          backgroundColor: kMintDark, // Цвет фона кнопки
+          backgroundColor: kMintDark, // Основной цвет кнопок
         ),
       ),
     );
