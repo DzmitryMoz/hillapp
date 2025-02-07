@@ -10,7 +10,7 @@ class AnalysisInputScreen extends StatefulWidget {
   final AnalysisService analysisService;
   final String patientName;
   final int patientAge;
-  final String patientSex;
+  final String patientSex; // "male" или "female"
 
   const AnalysisInputScreen({
     Key? key,
@@ -29,15 +29,28 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
   Map<String, TextEditingController> _controllers = {};
   late List<dynamic> _indicators;
 
+  // Простой метод для перевода пола на русский
+  String _translateSex(String sex) {
+    if (sex == 'male') {
+      return 'Мужской';
+    } else if (sex == 'female') {
+      return 'Женский';
+    }
+    // Если в будущем появятся другие варианты - fallback
+    return sex;
+  }
+
   @override
   void initState() {
     super.initState();
+    // Находим нужное исследование в JSON
     final research = widget.analysisService.findResearchById(widget.researchId);
     if (research == null) {
       _indicators = [];
     } else {
       _indicators = research['indicators'] ?? [];
     }
+    // Создаём TextEditingController для каждого показателя
     for (var ind in _indicators) {
       _controllers[ind['id']] = TextEditingController();
     }
@@ -49,8 +62,8 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
     super.dispose();
   }
 
-  /// Возвращаем цвет фона всей строки на основе введённого значения
-  Color _getBackgroundColor(Map<String,dynamic> indicator) {
+  /// Определяем цвет фона (зелёный/красный/белый) в зависимости от норм
+  Color _getBackgroundColor(Map<String, dynamic> indicator) {
     final ctrl = _controllers[indicator['id']];
     if (ctrl == null) return Colors.white;
 
@@ -63,23 +76,22 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
     final status = widget.analysisService.checkValue(
       indicator: indicator,
       value: val,
-      sex: widget.patientSex,
+      sex: widget.patientSex,   // "male"/"female"
       age: widget.patientAge,
     );
 
     if (status.contains('В норме')) {
-      // Зеленоватый фон
       return Colors.green.shade50;
     } else if (status.contains('Выше') || status.contains('Ниже')) {
-      // Розоватый/красноватый фон
       return Colors.red.shade50;
     }
-    // Если "Нет данных нормы" или что-то такое
     return Colors.white;
   }
 
+  /// Собираем введённые результаты и переходим на экран результата
   void _goResult() {
-    final results = <Map<String,dynamic>>[];
+    final results = <Map<String, dynamic>>[];
+
     for (var ind in _indicators) {
       final id = ind['id'];
       final name = ind['name'];
@@ -91,7 +103,7 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
           'id': id,
           'name': name,
           'value': txt,
-          'status': 'Некорректное значение'
+          'status': 'Некорректное значение',
         });
       } else {
         final status = widget.analysisService.checkValue(
@@ -104,7 +116,7 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
           'id': id,
           'name': name,
           'value': val,
-          'status': status
+          'status': status,
         });
       }
     }
@@ -139,7 +151,7 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Блок с именем, возрастом, полом
+            // Контейнер с данными пациента
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -149,21 +161,27 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
                   BoxShadow(
                     color: Colors.black12,
                     blurRadius: 4,
-                    offset: Offset(0,2),
+                    offset: Offset(0, 2),
                   )
                 ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Имя: ${widget.patientName}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  Text('Возраст: ${widget.patientAge}, Пол: ${widget.patientSex}'),
+                  Text(
+                    'Имя: ${widget.patientName}',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    'Возраст: ${widget.patientAge}, '
+                        'Пол: ${_translateSex(widget.patientSex)}',
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
 
-            // Генерируем поля для каждого показателя
+            // Поля ввода для каждого показателя
             for (var ind in _indicators) _buildIndicatorRow(ind),
 
             const SizedBox(height: 16),
@@ -191,22 +209,24 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
     final ctrl = _controllers[indicator['id']]!;
     final bgColor = _getBackgroundColor(indicator);
 
-    // Норма
+    // Получаем нормальный диапазон
     final norm = widget.analysisService.getReferenceRange(
-        indicator, widget.patientSex, widget.patientAge
+      indicator,
+      widget.patientSex,
+      widget.patientAge,
     );
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: bgColor, // Красный/зелёный/белый фон
+        color: bgColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: const [
           BoxShadow(
             color: Colors.black12,
             blurRadius: 4,
-            offset: Offset(0,2),
+            offset: Offset(0, 2),
           )
         ],
       ),
@@ -226,7 +246,7 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
               border: OutlineInputBorder(),
             ),
             onChanged: (_) {
-              setState(() {}); // Перерисовать при вводе
+              setState(() {}); // Обновим фон, если значение зашло/вышло из нормы
             },
           ),
           const SizedBox(height: 4),

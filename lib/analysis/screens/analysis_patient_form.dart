@@ -23,7 +23,7 @@ class _AnalysisPatientFormState extends State<AnalysisPatientForm> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _ageCtrl = TextEditingController();
-  String _sex = 'male';
+  String _sex = 'male'; // По умолчанию «male»
 
   void _goNext() {
     if (_formKey.currentState?.validate() ?? false) {
@@ -31,6 +31,7 @@ class _AnalysisPatientFormState extends State<AnalysisPatientForm> {
       final age = int.parse(_ageCtrl.text.trim());
       final sex = _sex;
 
+      // Переходим на экран ввода показателей
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -65,7 +66,7 @@ class _AnalysisPatientFormState extends State<AnalysisPatientForm> {
               BoxShadow(
                 color: Colors.black12,
                 blurRadius: 4,
-                offset: Offset(0,2),
+                offset: Offset(0, 2),
               )
             ],
           ),
@@ -76,8 +77,8 @@ class _AnalysisPatientFormState extends State<AnalysisPatientForm> {
                 const Text(
                   'Укажите данные пациента',
                   style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -116,19 +117,24 @@ class _AnalysisPatientFormState extends State<AnalysisPatientForm> {
                 const SizedBox(height: 16),
                 Row(
                   children: [
-                    const Text('Пол:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Пол:',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(width: 16),
                     Radio<String>(
                       value: 'male',
                       groupValue: _sex,
-                      onChanged: (val) => setState(() => _sex = val ?? 'male'),
+                      onChanged: (val) =>
+                          setState(() => _sex = val ?? 'male'),
                     ),
                     const Text('Муж.'),
                     const SizedBox(width: 16),
                     Radio<String>(
                       value: 'female',
                       groupValue: _sex,
-                      onChanged: (val) => setState(() => _sex = val ?? 'female'),
+                      onChanged: (val) =>
+                          setState(() => _sex = val ?? 'female'),
                     ),
                     const Text('Жен.'),
                   ],

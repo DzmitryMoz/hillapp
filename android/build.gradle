@@ -6,11 +6,28 @@ allprojects {
 }
 
 rootProject.buildDir = "../build"
+
 subprojects {
     project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
+
 subprojects {
     project.evaluationDependsOn(":app")
+}
+
+// Этот блок выполнится после того, как все проекты будут оценены,
+// и для Android-библиотек, у которых не указан namespace, будет установлен
+// namespace по шаблону "com.example.[имя_проекта]".
+gradle.projectsEvaluated {
+    subprojects {
+        if (project.plugins.hasPlugin("com.android.library")) {
+            def androidExtension = project.extensions.findByName("android")
+            if (androidExtension != null && (androidExtension.namespace == null || androidExtension.namespace.isEmpty())) {
+                androidExtension.namespace = "com.example.${project.name}"
+                println "Namespace установлен для проекта ${project.name}: ${androidExtension.namespace}"
+            }
+        }
+    }
 }
 
 tasks.register("clean", Delete) {

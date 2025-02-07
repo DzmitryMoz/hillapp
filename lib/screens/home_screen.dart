@@ -3,10 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/health_data.dart';
-import '../calculator/models/calendar_medication.dart';
-import '../calculator/models/calendar_medication_intake.dart';
-import '../calculator/services/calendar_database_service.dart';
-import 'calendar_screen.dart';
+import '../calendar/models/calendar_medication.dart';
+import '../calendar/models/calendar_medication_intake.dart';
+import '../calendar/service/calendar_database_service.dart';
+import '../calendar/screens/calendar_screen.dart';
 import 'blood_pressure_screen.dart';
 import 'medicine_screen.dart';
 import 'for_moms_screen.dart';
@@ -38,7 +38,7 @@ class _HomeScreenState extends State<HomeScreen> {
       const _HomePage(),
       const MedicineScreen(),
       const ForMomsScreen(),
-      const ProfileScreen(), // Передача onToggleTheme удалена
+      const ProfileScreen(),
     ];
   }
 
@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Верхняя панель с градиентным фоном (оставляем без изменений)
+      // Верхняя панель с градиентным фоном
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: Container(
@@ -105,9 +105,9 @@ class _HomeScreenState extends State<HomeScreen> {
         children: _pages,
       ),
 
-      // Нижняя навигационная панель с фоном в цвете кнопок меню
+      // Нижняя навигационная панель
       bottomNavigationBar: _buildBottomNavBar(context),
-      backgroundColor: kBackground, // Общий фон
+      backgroundColor: kBackground,
     );
   }
 
@@ -117,7 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         height: 60,
         decoration: BoxDecoration(
-          color: kMintDark, // Фон навигационной панели в цвете кнопок меню
+          color: kMintDark,
           borderRadius: BorderRadius.circular(30),
           boxShadow: const [
             BoxShadow(
@@ -334,15 +334,17 @@ class __HomePageState extends State<_HomePage> {
           const SizedBox(height: 16),
           Divider(color: Colors.grey.shade300, thickness: 1),
           const SizedBox(height: 16),
+
           // Кнопка «Полноценный календарь»
           _buildGradientButton(
             icon: Icons.calendar_month,
-            label: 'Полноценный календарь',
+            label: 'Календарь',
             onTap: _goFullCalendar,
           ),
           const SizedBox(height: 16),
           Divider(color: Colors.grey.shade300, thickness: 1),
           const SizedBox(height: 16),
+
           // Приёмы препаратов на день
           if (_todayMedications.isEmpty)
             Container(
@@ -386,15 +388,15 @@ class __HomePageState extends State<_HomePage> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  for (var med in _todayMedications)
-                    _buildMedicationTile(med),
+                  for (var med in _todayMedications) _buildMedicationTile(med),
                 ],
               ),
             ),
           const SizedBox(height: 20),
           Divider(color: Colors.grey.shade300, thickness: 1),
           const SizedBox(height: 16),
-          // Последний показатель АД и ЧСС
+
+          // Блок: Последний показатель АД и ЧСС (с цветовой подсветкой и увеличенным шрифтом)
           if (latestMeasurement != null) ...[
             Card(
               margin: const EdgeInsets.symmetric(vertical: 8),
@@ -407,25 +409,82 @@ class __HomePageState extends State<_HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Последний показатель АД и ЧСС:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                    // Заголовок с иконкой
+                    Row(
+                      children: const [
+                        Icon(Icons.favorite, color: Colors.redAccent),
+                        SizedBox(width: 8),
+                        Text(
+                          'Последний показатель АД и ЧСС:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Дата: ${_formatDate(latestMeasurement.date)}',
                       style: const TextStyle(fontSize: 14, color: Colors.grey),
                     ),
-                    Text(
-                      'АД: ${latestMeasurement.systolic}/${latestMeasurement.diastolic} мм рт. ст.',
-                      style: const TextStyle(fontSize: 16),
+                    // Выделяем АД
+                    Builder(
+                      builder: (context) {
+                        final systolic = latestMeasurement.systolic;
+                        final diastolic = latestMeasurement.diastolic;
+
+                        // Пример логики
+                        String shortStatus = '';
+                        Color adColor = Colors.black;
+                        if (systolic >= 140) {
+                          shortStatus = ' (Повышенное)';
+                          adColor = Colors.redAccent;
+                        } else if (systolic < 100) {
+                          shortStatus = ' (Низкое)';
+                          adColor = Colors.blueAccent;
+                        } else {
+                          shortStatus = ' (Норма)';
+                          adColor = Colors.green;
+                        }
+
+                        return Text(
+                          'АД: $systolic/$diastolic мм рт. ст.$shortStatus',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: adColor,
+                          ),
+                        );
+                      },
                     ),
-                    Text(
-                      'ЧСС: ${latestMeasurement.heartRate} уд/мин',
-                      style: const TextStyle(fontSize: 16),
+                    // Выделяем ЧСС
+                    Builder(
+                      builder: (context) {
+                        final hr = latestMeasurement.heartRate;
+                        String hrStatus = '';
+                        Color hrColor = Colors.black;
+
+                        if (hr < 60) {
+                          hrStatus = ' (Низкий)';
+                          hrColor = Colors.blueAccent;
+                        } else if (hr > 100) {
+                          hrStatus = ' (Высокий)';
+                          hrColor = Colors.redAccent;
+                        } else {
+                          hrStatus = ' (Норма)';
+                          hrColor = Colors.green;
+                        }
+
+                        return Text(
+                          'ЧСС: $hr уд/мин$hrStatus',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: hrColor,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -449,6 +508,7 @@ class __HomePageState extends State<_HomePage> {
           const SizedBox(height: 20),
           Divider(color: Colors.grey.shade300, thickness: 1),
           const SizedBox(height: 16),
+
           // Кнопки действий: Контроль АД, Расшифровка анализов, Калькулятор лекарств
           _buildGradientButton(
             icon: Icons.monitor_heart,
@@ -487,16 +547,16 @@ class __HomePageState extends State<_HomePage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
           backgroundColor: kMintDark,
           radius: 14,
-          child: const Icon(Icons.medical_services,
-              color: Colors.white, size: 18),
+          child: const Icon(Icons.medical_services, color: Colors.white, size: 18),
         ),
-        title: Text(name,
-            style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         subtitle: Text(
           'Дозировка: $dosage $unit\nВремя: $timeText, Приём: $intakeTypeLabel',
         ),
@@ -504,7 +564,7 @@ class __HomePageState extends State<_HomePage> {
     );
   }
 
-  // Универсальный стиль для кнопок (с единым цветом и скруглёнными краями)
+  // Универсальный стиль для кнопок
   Widget _buildGradientButton({
     required IconData icon,
     required String label,
@@ -518,12 +578,12 @@ class __HomePageState extends State<_HomePage> {
         icon: Icon(icon),
         label: Text(label),
         style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.white, // Цвет текста/иконок
+          foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.symmetric(vertical: 12),
-          backgroundColor: kMintDark, // Основной цвет кнопок
+          backgroundColor: kMintDark,
         ),
       ),
     );

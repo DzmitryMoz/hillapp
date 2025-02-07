@@ -1,4 +1,4 @@
-// lib/calculator/services/calendar_database_service.dart
+// lib/calendar/services/calendar_database_service.dart
 
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
@@ -9,7 +9,8 @@ import '../models/calendar_medication_intake.dart';
 
 class CalendarDatabaseService {
   // Singleton
-  static final CalendarDatabaseService _instance = CalendarDatabaseService._internal();
+  static final CalendarDatabaseService _instance =
+  CalendarDatabaseService._internal();
   factory CalendarDatabaseService() => _instance;
   CalendarDatabaseService._internal();
 
@@ -76,9 +77,30 @@ class CalendarDatabaseService {
         medication.toMap(),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
-      debugPrint('Календарный препарат добавлен: ${medication.name}, id: ${medication.id}');
+      debugPrint(
+        'Календарный препарат добавлен: ${medication.name}, id: ${medication.id}',
+      );
     } catch (e) {
       debugPrint('Ошибка при добавлении календарного препарата: $e');
+    }
+  }
+
+  /// Обновление существующего препарата (по id)
+  Future<void> updateCalendarMedication(CalendarMedication medication) async {
+    try {
+      final db = await database;
+      await db.update(
+        'calendar_medications',
+        medication.toMap(),
+        where: 'id = ?',
+        whereArgs: [medication.id],
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      debugPrint(
+        'Календарный препарат обновлён: ${medication.name}, id: ${medication.id}',
+      );
+    } catch (e) {
+      debugPrint('Ошибка при обновлении календарного препарата: $e');
     }
   }
 
@@ -99,6 +121,13 @@ class CalendarDatabaseService {
     return CalendarMedication.fromMap(m);
   }
 
+  Future<List<CalendarMedication>> getAllCalendarMedications() async {
+    final db = await database;
+    final maps = await db.query('calendar_medications');
+    debugPrint('Найдено календарных препаратов: ${maps.length}');
+    return maps.map((map) => CalendarMedication.fromMap(map)).toList();
+  }
+
   // ----------------- Методы для работы с CalendarMedicationIntake --------------------
 
   Future<void> insertCalendarMedicationIntake(CalendarMedicationIntake intake) async {
@@ -112,6 +141,25 @@ class CalendarDatabaseService {
       debugPrint('Календарный прием препарата добавлен: ${intake.toMap()}');
     } catch (e) {
       debugPrint('Ошибка при добавлении календарного приема препарата: $e');
+    }
+  }
+
+  /// Обновление существующего приёма (по id)
+  Future<void> updateCalendarMedicationIntake(CalendarMedicationIntake intake) async {
+    try {
+      final db = await database;
+      await db.update(
+        'calendar_medication_intakes',
+        intake.toMap(),
+        where: 'id = ?',
+        whereArgs: [intake.id],
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      debugPrint(
+        'Календарный прием препарата обновлен: ${intake.id}',
+      );
+    } catch (e) {
+      debugPrint('Ошибка при обновлении календарного приема препарата: $e');
     }
   }
 
@@ -131,21 +179,17 @@ class CalendarDatabaseService {
 
   Future<List<CalendarMedicationIntake>> getMedicationsForDay(DateTime day) async {
     final db = await database;
-    final dayString = '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
+    final dayString =
+        '${day.year}-${day.month.toString().padLeft(2, '0')}-${day.day.toString().padLeft(2, '0')}';
     final maps = await db.query(
       'calendar_medication_intakes',
       where: 'day = ?',
       whereArgs: [dayString],
       orderBy: 'time ASC', // Сортировка по времени
     );
-    debugPrint('Записей в calendar_medication_intakes для $dayString: ${maps.length}');
+    debugPrint(
+      'Записей в calendar_medication_intakes для $dayString: ${maps.length}',
+    );
     return maps.map((map) => CalendarMedicationIntake.fromMap(map)).toList();
-  }
-
-  Future<List<CalendarMedication>> getAllCalendarMedications() async {
-    final db = await database;
-    final maps = await db.query('calendar_medications');
-    debugPrint('Найдено календарных препаратов: ${maps.length}');
-    return maps.map((map) => CalendarMedication.fromMap(map)).toList();
   }
 }

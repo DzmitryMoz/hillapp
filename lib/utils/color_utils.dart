@@ -1,7 +1,7 @@
 // lib/utils/color_utils.dart
 
 import 'package:flutter/material.dart';
-import '../calculator/models/calendar_medication_intake.dart';
+import '../calendar/models/calendar_medication_intake.dart';
 
 Color getIntakeTypeColor(IntakeType type) {
   switch (type) {

@@ -20,6 +20,15 @@ class _AnalysisMainScreenState extends State<AnalysisMainScreen> {
   String _errorMessage = '';
   List<dynamic> _researches = [];
 
+  // Предположим, что общий анализ крови (cbc),
+  // общий анализ мочи (urinalysis) и биохимия (biochem)
+  // доступны и детям, и взрослым:
+  final Set<String> _childAndAdultIds = {
+    'cbc',
+    'biochem',
+    'urinalysis',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -49,7 +58,7 @@ class _AnalysisMainScreenState extends State<AnalysisMainScreen> {
     );
   }
 
-  void _selectResearch(Map<String,dynamic> research) {
+  void _selectResearch(Map<String, dynamic> research) {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -92,40 +101,79 @@ class _AnalysisMainScreenState extends State<AnalysisMainScreen> {
         ),
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _researches.length,
-      itemBuilder: (ctx, i) {
-        final item = _researches[i];
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 6),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 4,
-                offset: Offset(0,2),
-              )
-            ],
+
+    // Делим все исследования на 2 группы:
+    // 1) childAndAdult  (cbc, biochem, urinalysis)
+    // 2) adultOnly
+    final childAndAdultList = _researches
+        .where((item) => _childAndAdultIds.contains(item['id']))
+        .toList();
+    final adultOnlyList = _researches
+        .where((item) => !_childAndAdultIds.contains(item['id']))
+        .toList();
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      children: [
+        // --- Блок "Для детей и взрослых" ---
+        if (childAndAdultList.isNotEmpty) ...[
+          _buildSectionHeader('Для детей и взрослых'),
+          const SizedBox(height: 8),
+          ...childAndAdultList.map((research) => _buildResearchTile(research)),
+          const SizedBox(height: 24),
+        ],
+
+        // --- Блок "Только для взрослых" ---
+        if (adultOnlyList.isNotEmpty) ...[
+          _buildSectionHeader('Только для взрослых'),
+          const SizedBox(height: 8),
+          ...adultOnlyList.map((research) => _buildResearchTile(research)),
+        ],
+      ],
+    );
+  }
+
+  /// Заголовок раздела
+  Widget _buildSectionHeader(String title) {
+    return Text(
+      title,
+      style: const TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        color: Colors.black87,
+      ),
+    );
+  }
+
+  /// Виджет для одного элемента списка (контейнер + ListTile)
+  Widget _buildResearchTile(Map<String, dynamic> item) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 4,
+            offset: Offset(0, 2),
+          )
+        ],
+      ),
+      child: ListTile(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Text(
+          item['title'] ?? '',
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
           ),
-          child: ListTile(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            title: Text(
-              item['title'] ?? '',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _selectResearch(item),
-          ),
-        );
-      },
+        ),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: () => _selectResearch(item),
+      ),
     );
   }
 }
