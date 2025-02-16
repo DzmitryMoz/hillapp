@@ -8,8 +8,8 @@ import '../calendar/models/calendar_medication_intake.dart';
 import '../calendar/service/calendar_database_service.dart';
 import '../calendar/screens/calendar_screen.dart';
 import 'blood_pressure_screen.dart';
-import 'medicine_screen.dart';
-import 'for_moms_screen.dart';
+import '../medicine/medicine_screen.dart';
+import '../moms/for_moms_screen.dart';
 import 'profile_screen.dart';
 
 // Цветовые константы
@@ -34,11 +34,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _calendarDbService.loadMedications();
+    // Убираем "const" перед конструкторами, поскольку они не являются константными.
     _pages = [
-      const _HomePage(),
-      const MedicineScreen(),
-      const ForMomsScreen(),
-      const ProfileScreen(),
+      _HomePage(),
+      MedicineScreen(),
+      ForMomsScreen(),
+      ProfileScreen(),
     ];
   }
 
