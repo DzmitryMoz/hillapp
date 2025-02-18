@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import '../moms/pre_pregnancy/pre_pregnancy_screen.dart';
 import '../moms/postpartum_recovery/postpartum_recovery_screen.dart';
 import '../moms/baby_care/baby_care_screen.dart';
-import '../moms/feeding_screen/feeding_screen.dart';
-import '../moms/psychological_support/psychological_support_screen.dart';
+import '../moms/feeding_screen/baby_care_feeding_screen.dart';
+
+
 
 class ForMomsScreen extends StatelessWidget {
   ForMomsScreen({Key? key}) : super(key: key);
@@ -22,7 +23,7 @@ class ForMomsScreen extends StatelessWidget {
       'title': 'Послеродовой период и восстановление',
       'desc': 'Поддержка и рекомендации по восстановлению после родов.',
       'icon': Icons.healing,
-      'gradientColors': [Color(0xFFFFF9C4), Color(0xFFFBC02D)],
+      'gradientColors': [Color(0xFF9B111E), Color(0xFFE0115F)],
       'screen': const PostpartumRecoveryScreen(),
     },
     {
@@ -38,13 +39,6 @@ class ForMomsScreen extends StatelessWidget {
       'icon': Icons.restaurant,
       'gradientColors': [Color(0xFFFFCCBC), Color(0xFFD84315)],
       'screen': const FeedingScreen(),
-    },
-    {
-      'title': 'Психологическая поддержка',
-      'desc': 'Стресс-менеджмент, советы и поддержка для мам.',
-      'icon': Icons.self_improvement,
-      'gradientColors': [Color(0xFFE1BEE7), Color(0xFF8E24AA)],
-      'screen': const PsychologicalSupportScreen(),
     },
   ];
 

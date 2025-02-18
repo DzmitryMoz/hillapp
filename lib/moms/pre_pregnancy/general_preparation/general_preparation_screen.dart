@@ -1,40 +1,27 @@
 import 'package:flutter/material.dart';
+import 'pregnancy_preparation_screen.dart';
+import 'childbirth_preparation_screen.dart';
+import 'childbirth_planning_screen.dart';
 
-// Импортируем экраны для каждого раздела
-import 'general_preparation/general_preparation_screen.dart';
-import 'pregnancy_management/pregnancy_management_screen.dart';
-import 'birth_preparation/birth_preparation_screen.dart';
-
-class PrePregnancyScreen extends StatelessWidget {
-  const PrePregnancyScreen({Key? key}) : super(key: key);
+class GeneralPreparationScreen extends StatelessWidget {
+  const GeneralPreparationScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Подготовка к беременности и родам'),
+        title: const Text('Предварительное планирование'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
           SectionButton(
-            title: 'Этап подготовки к беременности и родам',
+            title: 'Подготовка к беременности',
             onTap: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const GeneralPreparationScreen(),
-                ),
-              );
-            },
-          ),
-          SectionButton(
-            title: 'Ведение беременности',
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PregnancyManagementScreen(),
+                  builder: (context) => const PregnancyPreparationScreen(),
                 ),
               );
             },
@@ -45,7 +32,18 @@ class PrePregnancyScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const BirthPreparationScreen(),
+                  builder: (context) => const ChildbirthPreparationScreen(),
+                ),
+              );
+            },
+          ),
+          SectionButton(
+            title: 'Планирование родов',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const ChildbirthPlanningScreen(),
                 ),
               );
             },
@@ -72,7 +70,7 @@ class SectionButton extends StatelessWidget {
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12.0),
-        // Добавляем тень
+        // Тень для кнопки
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.15),
@@ -80,7 +78,7 @@ class SectionButton extends StatelessWidget {
             offset: const Offset(0, 4),
           ),
         ],
-        // Градиентный фон для красивого оформления
+        // Градиентный фон
         gradient: const LinearGradient(
           colors: [
             Color(0xFF6DD5FA),

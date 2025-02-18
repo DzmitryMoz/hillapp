@@ -11,7 +11,6 @@ import 'utils/theme_manager.dart';
 import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
 import 'calculator/screens/medication_calculator_screen.dart';
-import 'calculator/screens/calculation_history_screen.dart';
 import 'calendar/screens/calendar_screen.dart';
 import 'screens/blood_pressure_screen.dart';
 import 'screens/profile_screen.dart';
@@ -75,8 +74,6 @@ class _HillAppState extends State<HillApp> {
         '/home': (context) => const HomeScreen(),
         '/medication_calculator': (context) =>
         const MedicationCalculatorScreen(),
-        '/calculation_history': (context) =>
-        const CalculationHistoryScreen(),
         '/calendar': (context) => const CalendarScreen(),
         '/analysis_main': (context) => const AnalysisMainScreen(),
         '/analysis_history': (context) => const AnalysisHistoryScreen(),

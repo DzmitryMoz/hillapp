@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const kMintLight = Color(0xFF04F4DE);
-  static const kMintDark  = Color(0xFF22F1E6);
-  static const kBackground= Color(0xFFE3FDFD);
+  static const kMintLight = Color(0xFF00E5D1); // Светлый оттенок
+  static const kMintDark  = Color(0xFF00B4AB); // Базовый цвет
+  static const kBackground = Color(0xFFE3FDFD);
 }
