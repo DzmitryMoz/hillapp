@@ -1,10 +1,10 @@
-// lib/screens/profile_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
+// Удаляем url_launcher, т.к. теперь делаем всплывающие окна, а не открываем ссылки
+// import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/app_colors.dart';
+import 'app_info_screen.dart'; // Импортируем наш новый экран «О приложении»
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -25,38 +25,65 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  // Открытие обратной связи
-  Future<void> _openFeedback() async {
-    const emailUrl = 'mailto:support@yourapp.com?subject=Обратная связь';
-    if (await canLaunch(emailUrl)) {
-      await launch(emailUrl);
-    } else {
-      _showErrorDialog("Не удалось открыть почтовый клиент");
-    }
+  // 1. Написать нам (всплывающее окно)
+  void _showFeedbackDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Написать нам'),
+        content: const Text(
+          'Если вы заметили какие-либо ошибки или недочёты в работе приложения, '
+              'пожалуйста, сообщите нам об этом по электронной почте:\n'
+              'mozol.dima97@mail.ru\n\n'
+              'Ваш отзыв поможет нам сделать приложение ещё лучше и удобнее для всех пользователей!',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
-  // Информация о приложении (пример)
-  Future<void> _openAppInfo() async {
-    // Можете заменить на ваш URL или экран «О приложении»
-    const infoUrl = 'https://yourapp.com/about';
-    if (await canLaunch(infoUrl)) {
-      await launch(infoUrl);
-    } else {
-      _showErrorDialog("Не удалось открыть страницу информации");
-    }
+  // 2. Оценить приложение (всплывающее окно)
+  void _showRateAppDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Оценить приложение'),
+        content: const Text(
+          'Нравится ли вам приложение?\n'
+              'Поставьте оценку и помогите нам стать лучше!',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Позже'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              // Здесь можно открыть маркет или форму для оценки
+              // Например, Play Store, App Store или собственную логику
+            },
+            child: const Text('Оценить'),
+          ),
+        ],
+      ),
+    );
   }
 
-  // Пример пункта: «Оценить приложение»
-  Future<void> _openRateApp() async {
-    const rateUrl = 'https://yourapp.com/rate';
-    if (await canLaunch(rateUrl)) {
-      await launch(rateUrl);
-    } else {
-      _showErrorDialog("Не удалось открыть страницу оценок");
-    }
+  // 3. Переход на экран «О приложении»
+  void _openAppInfoScreen() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AppInfoScreen()),
+    );
   }
 
-  // Вспомогательный метод для вывода ошибок
+  // Вспомогательный метод для вывода ошибок (если понадобится)
   void _showErrorDialog(String message) {
     showDialog(
       context: context,
@@ -91,7 +118,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               value: notificationsEnabled,
               onChanged: _toggleNotifications,
             ),
-
             const SizedBox(height: 24),
 
             // ---------- Раздел "Обратная связь" ----------
@@ -100,14 +126,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildProfileOption(
               icon: Icons.feedback,
               label: 'Написать нам',
-              onTap: _openFeedback,
+              onTap: _showFeedbackDialog,
             ),
             _buildProfileOption(
               icon: Icons.star_outline,
-              label: 'Оценить приложение', // опционально
-              onTap: _openRateApp,
+              label: 'Оценить приложение',
+              onTap: _showRateAppDialog,
             ),
-
             const SizedBox(height: 24),
 
             // ---------- Раздел "О приложении" ----------
@@ -116,7 +141,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             _buildProfileOption(
               icon: Icons.info_outline,
               label: 'Информация',
-              onTap: _openAppInfo,
+              onTap: _openAppInfoScreen,
             ),
           ],
         ),
@@ -161,7 +186,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        trailing:
+        const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
         onTap: onTap,
       ),
     );

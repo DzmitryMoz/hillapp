@@ -295,7 +295,7 @@ class __HomePageState extends State<_HomePage> {
           // 3. Кнопка "Календарь"
           _buildGradientCardButton(
             title: 'Календарь',
-            description: 'Полноценный календарь для просмотра.',
+            description: 'Организуйте приём лекарств и контролируйте расписание лечения.',
             iconData: Icons.calendar_month,
             gradientColors: [kMintLight, kMintDark],
             onTap: _goFullCalendar,
@@ -406,46 +406,46 @@ class __HomePageState extends State<_HomePage> {
     Color adColor;
     switch (overallScore) {
       case 1:
-        adStatus = 'Низкое';
+        adStatus = '(Низкое)';
         adColor = Colors.blueAccent;
         break;
       case 2:
-        adStatus = 'Оптимальное';
+        adStatus = '(Оптимальное)';
         adColor = Colors.green;
         break;
       case 3:
-        adStatus = 'Норма';
+        adStatus = '(Нормальное)';
         adColor = Colors.lightGreen;
         break;
       case 4:
-        adStatus = 'Высокое нормальное';
+        adStatus = '(Высокое нормальное)';
         adColor = Colors.yellow;
         break;
       case 5:
-        adStatus = '1 степень (мягкая)';
+        adStatus = '(АГ 1 степени)';
         adColor = Colors.orange;
         break;
       case 6:
-        adStatus = '2 степень (умеренная)';
+        adStatus = '(АГ 2 степени)';
         adColor = Colors.deepOrange;
         break;
       case 7:
-        adStatus = '3 степень (тяжёлая)';
+        adStatus = '(АГ 3 степени)';
         adColor = Colors.red;
         break;
       default:
-        adStatus = 'Неопределено';
+        adStatus = '(Неопределено)';
         adColor = Colors.grey;
     }
 
     // -------------------- Классификация для ЧСС --------------------
-    String hrStatus = ' (Норма)';
+    String hrStatus = ' (Нормальный)';
     Color hrColor = Colors.green;
     if (heartRate < 60) {
-      hrStatus = ' (Низкий)';
+      hrStatus = ' (Брадикардия)';
       hrColor = Colors.blueAccent;
     } else if (heartRate > 100) {
-      hrStatus = ' (Высокий)';
+      hrStatus = ' (Тахикардия)';
       hrColor = Colors.redAccent;
     }
 
@@ -485,6 +485,7 @@ class __HomePageState extends State<_HomePage> {
             const Divider(thickness: 1, height: 24),
             // Две "плитки": левая - АД, правая - ЧСС
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Левая плитка (АД)
                 Expanded(
@@ -512,7 +513,7 @@ class __HomePageState extends State<_HomePage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'сист $systolic\nдиаст $diastolic',
+                          'сист: $systolic\nдиаст: $diastolic',
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -520,7 +521,7 @@ class __HomePageState extends State<_HomePage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Показатели $adStatus',
+                          'Показатель: $adStatus',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,
@@ -566,7 +567,7 @@ class __HomePageState extends State<_HomePage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Показатели$hrStatus',
+                          'Показатель:$hrStatus',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.bold,

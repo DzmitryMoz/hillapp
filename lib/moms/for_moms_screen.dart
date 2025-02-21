@@ -5,8 +5,7 @@ import '../moms/pre_pregnancy/pre_pregnancy_screen.dart';
 import '../moms/postpartum_recovery/postpartum_recovery_screen.dart';
 import '../moms/baby_care/baby_care_screen.dart';
 import '../moms/feeding_screen/baby_care_feeding_screen.dart';
-
-
+import '../moms/growth_tracking/growth_tracking_screen.dart';
 
 class ForMomsScreen extends StatelessWidget {
   ForMomsScreen({Key? key}) : super(key: key);
@@ -40,12 +39,19 @@ class ForMomsScreen extends StatelessWidget {
       'gradientColors': [Color(0xFFFFCCBC), Color(0xFFD84315)],
       'screen': const FeedingScreen(),
     },
+    {
+      'title': 'Рост и развитие ребенка',
+      'desc': 'Отслеживайте показатели роста и веса ребенка.',
+      'icon': Icons.show_chart,
+      'gradientColors': [Color(0xFFFFF176), Color(0xFFFDD835)],
+      'screen': const GrowthTrackingScreen(),
+    },
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar можно убрать совсем, если нужен "чистый" вид
+      // AppBar можно убрать, если нужен "чистый" вид
       appBar: AppBar(
         title: const Text('Поддержка для мам'),
         backgroundColor: Colors.transparent,
@@ -77,7 +83,7 @@ class ForMomsScreen extends StatelessWidget {
   }
 }
 
-/// Карточка-раздел для поддержки мам с градиентом и динамической высотой
+/// Карточка-раздел для поддержки мам с градиентом
 class _MomsSectionButton extends StatelessWidget {
   final String title;
   final String description;
@@ -97,7 +103,6 @@ class _MomsSectionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      // Убрали фиксированную высоту, оставили только отступы
       margin: const EdgeInsets.symmetric(vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
@@ -123,7 +128,6 @@ class _MomsSectionButton extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                // Иконка с круглым полупрозрачным фоном
                 Container(
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
@@ -137,7 +141,6 @@ class _MomsSectionButton extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 16),
-                // Текстовая информация: заголовок и описание
                 Expanded(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -152,8 +155,6 @@ class _MomsSectionButton extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      // Если описания могут быть длинными, можно ограничить кол-во строк:
-                      // maxLines: 2, overflow: TextOverflow.ellipsis
                       Text(
                         description,
                         style: const TextStyle(

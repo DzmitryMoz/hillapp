@@ -18,6 +18,8 @@ dependencies:
   crypto: ^3.0.3
   table_calendar: ^3.0.8
   sqflite: ^2.0.0+4
+  carousel_slider: ^5.0.0
+  lottie: ^1.4.3
   intl: ^0.19.0
   path: ^1.8.0
   uuid: ^3.0.0
@@ -44,13 +46,15 @@ dev_dependencies:
 flutter_icons:
   android: true
   ios: true
-  image_path: "assets/icons/app_icon.png"
+  image_path: "assets/icons/viv2.png"
+
 
 flutter:
   assets:
     - assets/images/
+    - assets/icons/viv.png
+    - assets/lottie/confetti.json
     - assets/data/medications.json
-    - assets/icons/register.svg
     - assets/icons/app_icon.png
     - lib/analysis/data/analysis_data.json
   uses-material-design: true

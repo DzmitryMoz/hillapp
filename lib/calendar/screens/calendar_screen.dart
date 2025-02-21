@@ -1,18 +1,10 @@
-// lib/calendar/screens/calendar_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:uuid/uuid.dart';
 
 // Импортируем нужные enum и классы из моделей
 import '../models/calendar_medication.dart'
-    show CalendarMedication,
-    DosageUnit,
-    DosageUnitExtension,
-    FormType,
-    FormTypeExtension,
-    AdministrationRoute,
-    AdministrationRouteExtension; // <-- ВАЖНО, чтобы были enum + extension
+    show CalendarMedication, DosageUnit, DosageUnitExtension, FormType, FormTypeExtension, AdministrationRoute, AdministrationRouteExtension;
 import '../models/calendar_medication_intake.dart'
     show CalendarMedicationIntake, IntakeType, IntakeTypeExtension;
 import '../service/calendar_database_service.dart';
@@ -114,9 +106,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     formType: formType,
                     administrationRoute: administrationRoute,
                   );
-                  await _calendarDbService.insertCalendarMedication(
-                    newMedication,
-                  );
+                  await _calendarDbService.insertCalendarMedication(newMedication);
                   setState(() {
                     _medicationMap[medicationId] = newMedication;
                   });
@@ -129,9 +119,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   time: time,
                   intakeType: intakeType,
                 );
-                await _calendarDbService.insertCalendarMedicationIntake(
-                  newIntake,
-                );
+                await _calendarDbService.insertCalendarMedicationIntake(newIntake);
 
                 if (mounted) {
                   Navigator.pop(ctx);
@@ -181,18 +169,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   formType: updatedFormType,
                   administrationRoute: updatedAdministrationRoute,
                 );
-                await _calendarDbService.updateCalendarMedication(
-                  updatedMedication,
-                );
+                await _calendarDbService.updateCalendarMedication(updatedMedication);
 
                 final updatedIntake = medIntake.copyWith(
                   day: updatedDay,
                   time: updatedTime,
                   intakeType: updatedIntakeType,
                 );
-                await _calendarDbService.updateCalendarMedicationIntake(
-                  updatedIntake,
-                );
+                await _calendarDbService.updateCalendarMedicationIntake(updatedIntake);
 
                 Navigator.pop(ctx);
                 _loadMedications();
@@ -260,6 +244,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
               ],
             ),
             child: TableCalendar<CalendarMedicationIntake>(
+              // Указываем русскую локаль
+              locale: 'ru_RU',
               firstDay: DateTime.utc(2020, 1, 1),
               lastDay: DateTime.utc(2030, 12, 31),
               focusedDay: _focusedDay,
@@ -271,6 +257,12 @@ class _CalendarScreenState extends State<CalendarScreen> {
               },
               eventLoader: (day) =>
               _sameDay(day, _selectedDay) ? _selectedMedications.value : [],
+              // Переименовываем форматы
+              availableCalendarFormats: const {
+                CalendarFormat.month: 'Месяц',
+                CalendarFormat.twoWeeks: '2 недели',
+                CalendarFormat.week: 'Неделя',
+              },
               calendarStyle: const CalendarStyle(
                 todayDecoration: BoxDecoration(
                   color: kMintLight,
@@ -327,7 +319,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                       child: InkWell(
                         onTap: () => _editMedicationIntake(medIntake),
                         child: ListTile(
-                          leading: CircleAvatar(
+                          leading: const CircleAvatar(
                             backgroundColor: Colors.blueAccent,
                             radius: 10,
                           ),
@@ -335,12 +327,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                               ? const Text('Неизвестный препарат')
                               : Text(
                             '${medication.name} '
-                                '(${medication.dosage} '
-                                '${medication.dosageUnit.displayName})',
+                                '(${medication.dosage} ${medication.dosageUnit.displayName})',
                           ),
                           subtitle: Text(
-                            'Время: $timeStr\n'
-                                'Приём: ${medIntake.intakeType.displayName}',
+                            'Время: $timeStr\nПриём: ${medIntake.intakeType.displayName}',
                           ),
                           isThreeLine: true,
                           trailing: IconButton(
@@ -462,6 +452,8 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
+      // Локаль на русский язык
+      locale: const Locale('ru', 'RU'),
       initialDate: selectedDate,
       firstDate: now.subtract(const Duration(days: 3650)),
       lastDate: now.add(const Duration(days: 3650)),
@@ -475,6 +467,12 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
     final picked = await showTimePicker(
       context: context,
       initialTime: selectedTime,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox(),
+        );
+      },
     );
     if (picked != null) {
       setState(() => selectedTime = picked);
@@ -573,8 +571,7 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
                   }
                   return null;
                 },
-                keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
               const SizedBox(height: 16),
 
@@ -586,7 +583,6 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
                 ),
                 value: administrationRoute,
                 items: AdministrationRoute.values.map((r) {
-                  // ВАЖНО: Здесь на экране будет то, что вернётся из displayName
                   return DropdownMenuItem(
                     value: r,
                     child: Text(r.displayName),
@@ -752,6 +748,8 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
+      // Локаль на русский язык
+      locale: const Locale('ru', 'RU'),
       initialDate: selectedDate,
       firstDate: now.subtract(const Duration(days: 3650)),
       lastDate: now.add(const Duration(days: 3650)),
@@ -765,6 +763,12 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
     final picked = await showTimePicker(
       context: context,
       initialTime: selectedTime,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? const SizedBox(),
+        );
+      },
     );
     if (picked != null) {
       setState(() => selectedTime = picked);
@@ -865,8 +869,7 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
                   }
                   return null;
                 },
-                keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
               const SizedBox(height: 16),
 
@@ -880,8 +883,6 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
                 items: AdministrationRoute.values.map((r) {
                   return DropdownMenuItem(
                     value: r,
-                    // ВАЖНО: используем r.displayName,
-                    // чтобы показывать русскоязычный вариант
                     child: Text(r.displayName),
                   );
                 }).toList(),
