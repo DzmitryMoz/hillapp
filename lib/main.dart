@@ -54,7 +54,7 @@ class _HillAppState extends State<HillApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'HillApp',
+      title: 'Карманный доктор',
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme.copyWith(useMaterial3: true),
       darkTheme: ThemeManager.darkTheme.copyWith(useMaterial3: true),

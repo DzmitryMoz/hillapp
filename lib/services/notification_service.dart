@@ -1,3 +1,4 @@
+import 'dart:ui'; // Для Color
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -44,19 +45,34 @@ class NotificationService {
     final tz.TZDateTime tzScheduledDate =
     tz.TZDateTime.from(scheduledDate, tz.local);
 
-    const AndroidNotificationDetails androidPlatformChannelSpecifics =
+    // Настраиваем стиль уведомления с большим изображением (иконка таблетки)
+    final BigPictureStyleInformation bigPictureStyleInformation =
+    BigPictureStyleInformation(
+      DrawableResourceAndroidBitmap('@mipmap/pill_icon'),
+      contentTitle: '<b>$title</b>',
+      summaryText: body,
+      htmlFormatContentTitle: true,
+      htmlFormatSummaryText: true,
+    );
+
+    final AndroidNotificationDetails androidPlatformChannelSpecifics =
     AndroidNotificationDetails(
       'pill_calendar_channel_id', // Идентификатор канала
-      'Пилюльный календарь',       // Название канала
+      'Приёмы препаратов', // Название канала
       channelDescription: 'Уведомления для календаря таблеток',
       importance: Importance.max,
       priority: Priority.high,
+      color: const Color(0xFF00B4AB),
+      styleInformation: bigPictureStyleInformation,
     );
 
-    const DarwinNotificationDetails iosPlatformChannelSpecifics =
-    DarwinNotificationDetails();
+    final DarwinNotificationDetails iosPlatformChannelSpecifics =
+    DarwinNotificationDetails(
+      attachments: [DarwinNotificationAttachment('pill_icon.png')],
+      subtitle: 'Приём препарата',
+    );
 
-    const NotificationDetails platformChannelSpecifics = NotificationDetails(
+    final NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,
       iOS: iosPlatformChannelSpecifics,
     );

@@ -1,10 +1,18 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart'; // для CupertinoDatePicker
 import 'package:table_calendar/table_calendar.dart';
 import 'package:uuid/uuid.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
-// Импортируем нужные enum и классы из моделей
+// Импорт NotificationService из внешнего файла (путь проверьте сами)
+import 'package:hillapp/services/notification_service.dart';
+
+// Импорт моделей и сервисов (пути проверьте)
 import '../models/calendar_medication.dart'
-    show CalendarMedication, DosageUnit, DosageUnitExtension, FormType, FormTypeExtension, AdministrationRoute, AdministrationRouteExtension;
+    show CalendarMedication, DosageUnit, DosageUnitExtension, FormType,
+    FormTypeExtension, AdministrationRoute, AdministrationRouteExtension;
 import '../models/calendar_medication_intake.dart'
     show CalendarMedicationIntake, IntakeType, IntakeTypeExtension;
 import '../service/calendar_database_service.dart';
@@ -13,6 +21,32 @@ import '../../utils/color_utils.dart';
 const Color kMintLight = Color(0xFF00E5D1);
 const Color kMintDark = Color(0xFF00B4AB);
 const Color kBackground = Color(0xFFE3FDFD);
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // Инициализируем уведомления
+  await NotificationService().init();
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  // Глобальная тема
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Календарь приёмов',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        primaryColor: kMintDark,
+        scaffoldBackgroundColor: kBackground,
+        textTheme: GoogleFonts.robotoTextTheme(Theme.of(context).textTheme),
+      ),
+      home: const CalendarScreen(),
+    );
+  }
+}
 
 class CalendarScreen extends StatefulWidget {
   const CalendarScreen({Key? key}) : super(key: key);
@@ -65,7 +99,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     }
   }
 
-  /// Открываем форму для добавления препарата
+  /// Форма добавления препарата
   void _addMedication() {
     showModalBottomSheet(
       context: context,
@@ -121,6 +155,24 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 );
                 await _calendarDbService.insertCalendarMedicationIntake(newIntake);
 
+                // Планируем уведомление, если время в будущем
+                final scheduledDateTime = DateTime(
+                  day.year,
+                  day.month,
+                  day.day,
+                  time.hour,
+                  time.minute,
+                );
+                if (scheduledDateTime.isAfter(DateTime.now())) {
+                  await NotificationService().scheduleNotification(
+                    id: 0, // Можете генерировать уникальный ID
+                    title: 'Приём препарата',
+                    body:
+                    'Пора принять $medicationName ($dosage ${dosageUnit.displayName})',
+                    scheduledDate: scheduledDateTime,
+                  );
+                }
+
                 if (mounted) {
                   Navigator.pop(ctx);
                   _updateSelectedMedications(newIntake.day);
@@ -137,7 +189,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
     );
   }
 
-  /// Открываем форму для редактирования
+  /// Форма редактирования препарата
   void _editMedicationIntake(CalendarMedicationIntake medIntake) {
     final medication = _medicationMap[medIntake.medicationId];
     if (medication == null) return;
@@ -162,6 +214,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   updatedDay,
                   updatedTime,
                   ) async {
+                // Обновляем препарат
                 final updatedMedication = medication.copyWith(
                   name: updatedMedicationName,
                   dosage: updatedDosage,
@@ -171,6 +224,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                 );
                 await _calendarDbService.updateCalendarMedication(updatedMedication);
 
+                // Обновляем приём
                 final updatedIntake = medIntake.copyWith(
                   day: updatedDay,
                   time: updatedTime,
@@ -204,17 +258,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Кнопка «Назад» в AppBar
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            // Возврат на предыдущее меню/экран
-            Navigator.pop(context);
-          },
-        ),
         title: const Text('Календарь приёмов'),
         centerTitle: true,
+        backgroundColor: kMintDark,
         flexibleSpace: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
@@ -240,11 +287,10 @@ class _CalendarScreenState extends State<CalendarScreen> {
                   color: Colors.black12,
                   blurRadius: 6,
                   offset: Offset(0, 3),
-                )
+                ),
               ],
             ),
             child: TableCalendar<CalendarMedicationIntake>(
-              // Указываем русскую локаль
               locale: 'ru_RU',
               firstDay: DateTime.utc(2020, 1, 1),
               lastDay: DateTime.utc(2030, 12, 31),
@@ -257,24 +303,15 @@ class _CalendarScreenState extends State<CalendarScreen> {
               },
               eventLoader: (day) =>
               _sameDay(day, _selectedDay) ? _selectedMedications.value : [],
-              // Переименовываем форматы
               availableCalendarFormats: const {
                 CalendarFormat.month: 'Месяц',
                 CalendarFormat.twoWeeks: '2 недели',
                 CalendarFormat.week: 'Неделя',
               },
               calendarStyle: const CalendarStyle(
-                todayDecoration: BoxDecoration(
-                  color: kMintLight,
-                  shape: BoxShape.circle,
-                ),
-                selectedDecoration: BoxDecoration(
-                  color: kMintDark,
-                  shape: BoxShape.circle,
-                ),
-                markerDecoration: BoxDecoration(
-                  color: Colors.transparent,
-                ),
+                todayDecoration: BoxDecoration(color: kMintLight, shape: BoxShape.circle),
+                selectedDecoration: BoxDecoration(color: kMintDark, shape: BoxShape.circle),
+                markerDecoration: BoxDecoration(color: Colors.transparent),
               ),
               headerStyle: const HeaderStyle(
                 titleCentered: true,
@@ -288,7 +325,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
           const SizedBox(height: 16),
-
           // Список приёмов
           Expanded(
             child: ValueListenableBuilder<List<CalendarMedicationIntake>>(
@@ -307,12 +343,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                     final hh = medIntake.time.hour.toString().padLeft(2, '0');
                     final mm = medIntake.time.minute.toString().padLeft(2, '0');
                     final timeStr = '$hh:$mm';
-
                     return Card(
-                      margin: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
-                      ),
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -340,9 +372,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                                 context: context,
                                 builder: (ctx) => AlertDialog(
                                   title: const Text('Удалить приём?'),
-                                  content: const Text(
-                                    'Вы уверены, что хотите удалить этот приём?',
-                                  ),
+                                  content: const Text('Вы уверены, что хотите удалить этот приём?'),
                                   actions: [
                                     TextButton(
                                       onPressed: () => Navigator.pop(ctx),
@@ -373,8 +403,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
           ),
         ],
       ),
-
-      // Кнопка «Добавить»
       floatingActionButton: FloatingActionButton(
         onPressed: _addMedication,
         backgroundColor: kMintDark,
@@ -416,8 +444,6 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
 
   String medicationName = '';
   String dosage = '';
-
-  /// Значения по умолчанию
   FormType formType = FormType.tabletka;
   DosageUnit dosageUnit = DosageUnit.mg;
   AdministrationRoute administrationRoute = AdministrationRoute.oral;
@@ -452,7 +478,6 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      // Локаль на русский язык
       locale: const Locale('ru', 'RU'),
       initialDate: selectedDate,
       firstDate: now.subtract(const Duration(days: 3650)),
@@ -467,9 +492,9 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
     final picked = await showTimePicker(
       context: context,
       initialTime: selectedTime,
-      builder: (context, child) {
+      builder: (ctx, child) {
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
           child: child ?? const SizedBox(),
         );
       },
@@ -501,24 +526,16 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-
-              // Название препарата
               TextFormField(
                 decoration: const InputDecoration(
                   labelText: 'Название препарата',
                   border: OutlineInputBorder(),
                 ),
                 onSaved: (val) => medicationName = val?.trim() ?? '',
-                validator: (val) {
-                  if (val == null || val.isEmpty) {
-                    return 'Введите название препарата';
-                  }
-                  return null;
-                },
+                validator: (val) =>
+                (val == null || val.isEmpty) ? 'Введите название препарата' : null,
               ),
               const SizedBox(height: 16),
-
-              // Форма выпуска
               DropdownButtonFormField<FormType>(
                 decoration: const InputDecoration(
                   labelText: 'Форма выпуска',
@@ -532,14 +549,10 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
                   );
                 }).toList(),
                 onChanged: (val) {
-                  if (val != null) {
-                    setState(() => formType = val);
-                  }
+                  if (val != null) setState(() => formType = val);
                 },
               ),
               const SizedBox(height: 16),
-
-              // Единица дозировки
               DropdownButtonFormField<DosageUnit>(
                 decoration: const InputDecoration(
                   labelText: 'Единица дозировки',
@@ -557,25 +570,17 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
                 },
               ),
               const SizedBox(height: 16),
-
-              // Количество (дозировка)
               TextFormField(
                 decoration: const InputDecoration(
                   labelText: 'Количество (дозировка)',
                   border: OutlineInputBorder(),
                 ),
                 onSaved: (val) => dosage = val?.trim() ?? '',
-                validator: (val) {
-                  if (val == null || val.isEmpty) {
-                    return 'Введите дозировку';
-                  }
-                  return null;
-                },
+                validator: (val) =>
+                (val == null || val.isEmpty) ? 'Введите дозировку' : null,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
               const SizedBox(height: 16),
-
-              // Путь введения (на русском)
               DropdownButtonFormField<AdministrationRoute>(
                 decoration: const InputDecoration(
                   labelText: 'Путь введения',
@@ -589,14 +594,10 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
                   );
                 }).toList(),
                 onChanged: (val) {
-                  if (val != null) {
-                    setState(() => administrationRoute = val);
-                  }
+                  if (val != null) setState(() => administrationRoute = val);
                 },
               ),
               const SizedBox(height: 16),
-
-              // Вид приёма (утро, вечер, ...)
               DropdownButtonFormField<IntakeType>(
                 decoration: const InputDecoration(
                   labelText: 'Вид приёма',
@@ -610,14 +611,10 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
                   );
                 }).toList(),
                 onChanged: (val) {
-                  if (val != null) {
-                    setState(() => intakeType = val);
-                  }
+                  if (val != null) setState(() => intakeType = val);
                 },
               ),
               const SizedBox(height: 16),
-
-              // Дата приёма
               Row(
                 children: [
                   Expanded(
@@ -636,8 +633,6 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Время приёма
               Row(
                 children: [
                   Expanded(
@@ -653,17 +648,12 @@ class _AddMedicationFormState extends State<AddMedicationForm> {
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Кнопка «Добавить»
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: _submit,
-                  child: const Text(
-                    'Добавить',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  child: const Text('Добавить', style: TextStyle(fontSize: 18)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -748,24 +738,21 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      // Локаль на русский язык
       locale: const Locale('ru', 'RU'),
       initialDate: selectedDate,
       firstDate: now.subtract(const Duration(days: 3650)),
       lastDate: now.add(const Duration(days: 3650)),
     );
-    if (picked != null) {
-      setState(() => selectedDate = picked);
-    }
+    if (picked != null) setState(() => selectedDate = picked);
   }
 
   Future<void> _pickTime() async {
     final picked = await showTimePicker(
       context: context,
       initialTime: selectedTime,
-      builder: (context, child) {
+      builder: (ctx, child) {
         return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: true),
           child: child ?? const SizedBox(),
         );
       },
@@ -797,8 +784,6 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 16),
-
-              // Название препарата
               TextFormField(
                 initialValue: medicationName,
                 decoration: const InputDecoration(
@@ -806,16 +791,10 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
                   border: OutlineInputBorder(),
                 ),
                 onSaved: (val) => medicationName = val?.trim() ?? '',
-                validator: (val) {
-                  if (val == null || val.isEmpty) {
-                    return 'Введите название препарата';
-                  }
-                  return null;
-                },
+                validator: (val) =>
+                (val == null || val.isEmpty) ? 'Введите название препарата' : null,
               ),
               const SizedBox(height: 16),
-
-              // Форма выпуска
               DropdownButtonFormField<FormType>(
                 decoration: const InputDecoration(
                   labelText: 'Форма выпуска',
@@ -829,14 +808,10 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
                   );
                 }).toList(),
                 onChanged: (val) {
-                  if (val != null) {
-                    setState(() => formType = val);
-                  }
+                  if (val != null) setState(() => formType = val);
                 },
               ),
               const SizedBox(height: 16),
-
-              // Единица дозировки
               DropdownButtonFormField<DosageUnit>(
                 decoration: const InputDecoration(
                   labelText: 'Единица дозировки',
@@ -854,8 +829,6 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
                 },
               ),
               const SizedBox(height: 16),
-
-              // Количество (дозировка)
               TextFormField(
                 initialValue: dosage,
                 decoration: const InputDecoration(
@@ -863,17 +836,11 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
                   border: OutlineInputBorder(),
                 ),
                 onSaved: (val) => dosage = val?.trim() ?? '',
-                validator: (val) {
-                  if (val == null || val.isEmpty) {
-                    return 'Введите дозировку';
-                  }
-                  return null;
-                },
+                validator: (val) =>
+                (val == null || val.isEmpty) ? 'Введите дозировку' : null,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
               ),
               const SizedBox(height: 16),
-
-              // Путь введения (на русском)
               DropdownButtonFormField<AdministrationRoute>(
                 decoration: const InputDecoration(
                   labelText: 'Путь введения',
@@ -891,8 +858,6 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
                 },
               ),
               const SizedBox(height: 16),
-
-              // Вид приёма
               DropdownButtonFormField<IntakeType>(
                 decoration: const InputDecoration(
                   labelText: 'Вид приёма',
@@ -910,8 +875,6 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
                 },
               ),
               const SizedBox(height: 16),
-
-              // Дата приёма
               Row(
                 children: [
                   Expanded(
@@ -930,8 +893,6 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Время приёма
               Row(
                 children: [
                   Expanded(
@@ -947,17 +908,12 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
                 ],
               ),
               const SizedBox(height: 24),
-
-              // Кнопка «Сохранить»
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton(
                   onPressed: _submit,
-                  child: const Text(
-                    'Сохранить',
-                    style: TextStyle(fontSize: 18),
-                  ),
+                  child: const Text('Сохранить', style: TextStyle(fontSize: 18)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -969,7 +925,6 @@ class _EditMedicationFormState extends State<EditMedicationForm> {
   }
 }
 
-// Заглушки для update-методов (если нужно)
 extension CalendarDatabaseServiceExtensions on CalendarDatabaseService {
   Future<void> updateCalendarMedicationIntake(CalendarMedicationIntake intake) async {
     // TODO: Реализуйте update в базе
