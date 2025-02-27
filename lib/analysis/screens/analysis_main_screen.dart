@@ -20,9 +20,7 @@ class _AnalysisMainScreenState extends State<AnalysisMainScreen> {
   String _errorMessage = '';
   List<dynamic> _researches = [];
 
-  // Предположим, что общий анализ крови (cbc),
-  // общий анализ мочи (urinalysis) и биохимия (biochem)
-  // доступны и детям, и взрослым:
+  // Для разделения анализов оставляем неизменными значения id
   final Set<String> _childAndAdultIds = {
     'cbc',
     'biochem',
@@ -70,6 +68,18 @@ class _AnalysisMainScreenState extends State<AnalysisMainScreen> {
     );
   }
 
+  // Функция для получения названия исследования на русском языке,
+  // при этом значение id остаётся неизменным для корректного разделения
+  String getResearchTitle(Map<String, dynamic> item) {
+    final Map<String, String> russianTitles = {
+      'cbc': 'Общий анализ крови',
+      'biochem': 'Биохимия',
+      'urinalysis': 'Общий анализ мочи',
+      // Добавьте другие исследования по необходимости
+    };
+    return russianTitles[item['id']] ?? (item['title'] ?? '');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -102,9 +112,9 @@ class _AnalysisMainScreenState extends State<AnalysisMainScreen> {
       );
     }
 
-    // Делим все исследования на 2 группы:
-    // 1) childAndAdult  (cbc, biochem, urinalysis)
-    // 2) adultOnly
+    // Делим исследования на 2 группы:
+    // 1) Для детей и взрослых (id из _childAndAdultIds)
+    // 2) Только для взрослых (остальные)
     final childAndAdultList = _researches
         .where((item) => _childAndAdultIds.contains(item['id']))
         .toList();
@@ -115,15 +125,12 @@ class _AnalysisMainScreenState extends State<AnalysisMainScreen> {
     return ListView(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       children: [
-        // --- Блок "Для детей и взрослых" ---
         if (childAndAdultList.isNotEmpty) ...[
           _buildSectionHeader('Для детей и взрослых'),
           const SizedBox(height: 8),
           ...childAndAdultList.map((research) => _buildResearchTile(research)),
           const SizedBox(height: 24),
         ],
-
-        // --- Блок "Только для взрослых" ---
         if (adultOnlyList.isNotEmpty) ...[
           _buildSectionHeader('Только для взрослых'),
           const SizedBox(height: 8),
@@ -133,7 +140,6 @@ class _AnalysisMainScreenState extends State<AnalysisMainScreen> {
     );
   }
 
-  /// Заголовок раздела
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
@@ -145,7 +151,6 @@ class _AnalysisMainScreenState extends State<AnalysisMainScreen> {
     );
   }
 
-  /// Виджет для одного элемента списка (контейнер + ListTile)
   Widget _buildResearchTile(Map<String, dynamic> item) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 6),
@@ -165,7 +170,7 @@ class _AnalysisMainScreenState extends State<AnalysisMainScreen> {
           borderRadius: BorderRadius.circular(12),
         ),
         title: Text(
-          item['title'] ?? '',
+          getResearchTitle(item),
           style: const TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,

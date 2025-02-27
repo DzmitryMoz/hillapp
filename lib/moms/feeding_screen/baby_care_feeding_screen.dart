@@ -286,6 +286,8 @@ class FeedingScreen extends StatelessWidget {
         children: [
           SectionButton(
             title: 'Грудное вскармливание',
+            icon: Icons.pregnant_woman,
+            gradientColors: const [Color(0xFF42A5F5), Color(0xFF1976D2)],
             onTap: () {
               Navigator.push(
                 context,
@@ -300,6 +302,8 @@ class FeedingScreen extends StatelessWidget {
           ),
           SectionButton(
             title: 'Искусственное вскармливание',
+            icon: Icons.local_drink,
+            gradientColors: const [Color(0xFF66BB6A), Color(0xFF388E3C)],
             onTap: () {
               Navigator.push(
                 context,
@@ -314,6 +318,8 @@ class FeedingScreen extends StatelessWidget {
           ),
           SectionButton(
             title: 'Введение прикорма',
+            icon: Icons.restaurant,
+            gradientColors: const [Color(0xFFFFA726), Color(0xFFF57C00)],
             onTap: () {
               Navigator.push(
                 context,
@@ -335,45 +341,66 @@ class FeedingScreen extends StatelessWidget {
 class SectionButton extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
-  const SectionButton({Key? key, required this.title, required this.onTap})
-      : super(key: key);
+  final IconData? icon;
+  final List<Color>? gradientColors;
+
+  const SectionButton({
+    Key? key,
+    required this.title,
+    required this.onTap,
+    this.icon,
+    this.gradientColors,
+  }) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(16.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
           ),
         ],
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFFCCBC), Color(0xFFD84315)],
+        gradient: LinearGradient(
+          colors: gradientColors ?? [Color(0xFFFFCCBC), Color(0xFFD84315)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12.0),
+        borderRadius: BorderRadius.circular(16.0),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: BorderRadius.circular(16.0),
+          splashColor: Colors.white.withOpacity(0.3),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Center(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16.0,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w600,
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, color: Colors.white, size: 28),
+                  const SizedBox(width: 12),
+                ],
+                Flexible(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18.0,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
-                textAlign: TextAlign.center,
-              ),
+              ],
             ),
           ),
         ),

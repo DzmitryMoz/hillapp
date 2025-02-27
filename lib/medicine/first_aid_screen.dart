@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'first_aid_detail_screen.dart';
 
-
 class FirstAidScreen extends StatefulWidget {
   const FirstAidScreen({Key? key}) : super(key: key);
 
@@ -10,8 +9,7 @@ class FirstAidScreen extends StatefulWidget {
 }
 
 class _FirstAidScreenState extends State<FirstAidScreen> {
-  // Список элементов первой медицинской помощи.
-  // Здесь можно добавлять новые пункты.
+  // Список пунктов первой медицинской помощи
   final List<Map<String, String>> firstAidItems = [
     {
       "title": "Общие правила",
@@ -1030,23 +1028,23 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
     // Добавьте новые пункты по необходимости.
   ];
 
-  // Список отфильтрованных элементов (для поиска).
+  // Отфильтрованный список (для поиска)
   List<Map<String, String>> filteredItems = [];
 
-  // Контроллер для поля поиска.
+  // Контроллер для поля поиска
   final TextEditingController searchController = TextEditingController();
 
-  // Флаг, определяющий, активен ли режим поиска.
+  // Флаг, определяющий, активен ли режим поиска
   bool _isSearching = false;
 
   @override
   void initState() {
     super.initState();
-    // Изначально отображаются все элементы.
-    filteredItems = firstAidItems;
+    // Изначально показываем все пункты
+    filteredItems = List.from(firstAidItems);
   }
 
-  /// Фильтрует список элементов по введённому запросу.
+  /// Фильтрует список по введённому запросу
   void _filterItems(String query) {
     setState(() {
       if (query.isNotEmpty) {
@@ -1055,23 +1053,104 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
             item['title']!.toLowerCase().contains(query.toLowerCase()))
             .toList();
       } else {
-        filteredItems = firstAidItems;
+        filteredItems = List.from(firstAidItems);
       }
+      // По желанию, сортируем по названию (на случай, если порядок не задан)
+      filteredItems.sort((a, b) => a['title']!
+          .toLowerCase()
+          .compareTo(b['title']!.toLowerCase()));
     });
   }
 
-  /// Переключает режим поиска.
+  /// Переключает режим поиска
   void _toggleSearch() {
     setState(() {
       if (_isSearching) {
-        // Если поиск активен — отключаем его, очищаем поле и сбрасываем список.
+        // Отключаем поиск, сбрасываем
         _isSearching = false;
         searchController.clear();
-        filteredItems = firstAidItems;
+        filteredItems = List.from(firstAidItems);
       } else {
         _isSearching = true;
       }
     });
+  }
+
+  /// Группируем список по первой букве
+  Map<String, List<Map<String, String>>> _groupByFirstLetter(
+      List<Map<String, String>> list) {
+    final Map<String, List<Map<String, String>>> grouped = {};
+
+    for (var item in list) {
+      final title = item['title'] ?? '';
+      if (title.isEmpty) continue;
+      // Берём первую букву (учитываем кириллицу/латиницу)
+      final letter = title[0].toUpperCase();
+      if (!grouped.containsKey(letter)) {
+        grouped[letter] = [];
+      }
+      grouped[letter]!.add(item);
+    }
+
+    // Сортируем элементы внутри каждой группы
+    grouped.forEach((key, value) {
+      value.sort((a, b) =>
+          a['title']!.toLowerCase().compareTo(b['title']!.toLowerCase()));
+    });
+
+    return grouped;
+  }
+
+  /// Строим виджеты на основе сгруппированных данных
+  List<Widget> _buildAlphabeticalList() {
+    final grouped = _groupByFirstLetter(filteredItems);
+    // Список букв
+    final letters = grouped.keys.toList()..sort();
+
+    List<Widget> widgets = [];
+
+    for (var letter in letters) {
+      // Добавляем заголовок (букву)
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text(
+            letter,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+
+      // Элементы в группе
+      for (var item in grouped[letter]!) {
+        final title = item['title']!;
+        widgets.add(
+          Card(
+            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+            child: ListTile(
+              title: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FirstAidDetailScreen(
+                      title: title,
+                      detail: item['detail']!,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }
+    }
+
+    return widgets;
   }
 
   @override
@@ -1082,9 +1161,10 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasData = filteredItems.isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
-        // Если поиск активен, отображается поле ввода; иначе – обычный заголовок.
         title: _isSearching
             ? TextField(
           controller: searchController,
@@ -1103,32 +1183,12 @@ class _FirstAidScreenState extends State<FirstAidScreen> {
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: filteredItems.length,
-        itemBuilder: (context, index) {
-          final item = filteredItems[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            child: ListTile(
-              title: Text(
-                item['title']!,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => FirstAidDetailScreen(
-                      title: item['title']!,
-                      detail: item['detail']!,
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+      body: hasData
+          ? ListView(
+        children: _buildAlphabeticalList(),
+      )
+          : const Center(
+        child: Text('Ничего не найдено'),
       ),
     );
   }

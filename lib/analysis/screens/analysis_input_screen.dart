@@ -31,7 +31,7 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
 
   // Простой метод для перевода пола на русский
   String _translateSex(String sex) {
-    if (sex == 'male') {
+    if (sex == 'Пол') {
       return 'Мужской';
     } else if (sex == 'female') {
       return 'Женский';

@@ -35,9 +35,7 @@ class MedicineScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Медицина'),
-      ),
+
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: items.length,

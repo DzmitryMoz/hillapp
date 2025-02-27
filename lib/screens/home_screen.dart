@@ -56,9 +56,9 @@ class _HomeScreenState extends State<HomeScreen> {
       case 2:
         return 'Для мам';
       case 3:
-        return 'Профиль';
+        return 'Настройки';
       default:
-        return 'HillApp';
+        return 'Карманный доктор';
     }
   }
 
@@ -155,8 +155,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 label: 'Для мам',
               ),
               BottomNavigationBarItem(
-                icon: Icon(Icons.person),
-                label: 'Профиль',
+                icon: Icon(Icons.settings),
+                label: 'Настройки',
               ),
             ],
           ),

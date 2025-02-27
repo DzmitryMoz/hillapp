@@ -9,6 +9,7 @@ class SymptomsListScreen extends StatefulWidget {
 }
 
 class _SymptomsListScreenState extends State<SymptomsListScreen> {
+  // Пример списка симптомов (можно заменить своими данными)
   final List<Map<String, String>> symptoms = [
     {
       "name": "Алкалоз",
@@ -21395,7 +21396,6 @@ class _SymptomsListScreenState extends State<SymptomsListScreen> {
 // Здесь можно добавлять и другие записи аналогичным образом.
   ];
 
-
   List<Map<String, String>> filteredSymptoms = [];
   final TextEditingController searchController = TextEditingController();
   bool _isSearching = false;
@@ -21403,9 +21403,11 @@ class _SymptomsListScreenState extends State<SymptomsListScreen> {
   @override
   void initState() {
     super.initState();
-    filteredSymptoms = symptoms;
+    // Изначально отображаются все симптомы
+    filteredSymptoms = List.from(symptoms);
   }
 
+  /// Фильтрация списка симптомов по введённому запросу
   void _filterSymptoms(String query) {
     setState(() {
       if (query.isNotEmpty) {
@@ -21414,21 +21416,94 @@ class _SymptomsListScreenState extends State<SymptomsListScreen> {
             symptom['name']!.toLowerCase().contains(query.toLowerCase()))
             .toList();
       } else {
-        filteredSymptoms = symptoms;
+        filteredSymptoms = List.from(symptoms);
       }
+      // Сортировка отфильтрованного списка по названию
+      filteredSymptoms.sort((a, b) =>
+          a['name']!.toLowerCase().compareTo(b['name']!.toLowerCase()));
     });
   }
 
+  /// Переключение режима поиска
   void _toggleSearch() {
     setState(() {
       if (_isSearching) {
         _isSearching = false;
         searchController.clear();
-        filteredSymptoms = symptoms;
+        filteredSymptoms = List.from(symptoms);
       } else {
         _isSearching = true;
       }
     });
+  }
+
+  /// Группирует список симптомов по первой букве названия
+  Map<String, List<Map<String, String>>> _groupByFirstLetter(
+      List<Map<String, String>> list) {
+    final Map<String, List<Map<String, String>>> grouped = {};
+    for (var item in list) {
+      final name = item['name'] ?? '';
+      if (name.isEmpty) continue;
+      final letter = name[0].toUpperCase();
+      if (!grouped.containsKey(letter)) {
+        grouped[letter] = [];
+      }
+      grouped[letter]!.add(item);
+    }
+    // Сортировка элементов внутри каждой группы
+    grouped.forEach((key, value) {
+      value.sort((a, b) =>
+          a['name']!.toLowerCase().compareTo(b['name']!.toLowerCase()));
+    });
+    return grouped;
+  }
+
+  /// Строит список виджетов на основе сгруппированных по букве данных
+  List<Widget> _buildAlphabeticalList() {
+    final grouped = _groupByFirstLetter(filteredSymptoms);
+    final letters = grouped.keys.toList()..sort();
+
+    List<Widget> widgets = [];
+    for (var letter in letters) {
+      // Заголовок группы (первая буква)
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Text(
+            letter,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+        ),
+      );
+      // Элементы группы
+      for (var item in grouped[letter]!) {
+        final name = item['name']!;
+        widgets.add(
+          Card(
+            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 16),
+            child: ListTile(
+              title: Text(
+                name,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              trailing: const Icon(Icons.arrow_forward_ios),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SymptomDetailScreen(
+                      symptomName: name,
+                      symptomDetail: item['detail']!,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+      }
+    }
+    return widgets;
   }
 
   @override
@@ -21439,6 +21514,8 @@ class _SymptomsListScreenState extends State<SymptomsListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasData = filteredSymptoms.isNotEmpty;
+
     return Scaffold(
       appBar: AppBar(
         title: _isSearching
@@ -21459,32 +21536,12 @@ class _SymptomsListScreenState extends State<SymptomsListScreen> {
           ),
         ],
       ),
-      body: ListView.builder(
-        itemCount: filteredSymptoms.length,
-        itemBuilder: (context, index) {
-          final symptom = filteredSymptoms[index];
-          return Card(
-            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            child: ListTile(
-              title: Text(
-                symptom['name']!,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              trailing: const Icon(Icons.arrow_forward_ios),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SymptomDetailScreen(
-                      symptomName: symptom['name']!,
-                      symptomDetail: symptom['detail']!,
-                    ),
-                  ),
-                );
-              },
-            ),
-          );
-        },
+      body: hasData
+          ? ListView(
+        children: _buildAlphabeticalList(),
+      )
+          : const Center(
+        child: Text('Ничего не найдено'),
       ),
     );
   }

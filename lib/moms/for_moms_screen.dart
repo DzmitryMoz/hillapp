@@ -52,11 +52,7 @@ class ForMomsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       // AppBar можно убрать, если нужен "чистый" вид
-      appBar: AppBar(
-        title: const Text('Поддержка для мам'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+
       backgroundColor: Colors.white,
       body: ListView.builder(
         padding: const EdgeInsets.all(16),
