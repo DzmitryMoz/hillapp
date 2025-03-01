@@ -344,8 +344,8 @@ class __HomePageState extends State<_HomePage> {
           const SizedBox(height: 12),
           // 7. Кнопка "Калькулятор лекарств"
           _buildGradientCardButton(
-            title: 'Калькулятор лекарств',
-            description: 'Рассчитайте дозировку в зависимости от веса и возраста.',
+            title: 'Калькулятор ИМТ',
+            description: 'Быстрый расчёт индекса массы тела для оценки состояния вашего здоровья.',
             iconData: Icons.calculate,
             gradientColors: [kMintLight, kMintDark],
             onTap: _goMedicationCalculator,

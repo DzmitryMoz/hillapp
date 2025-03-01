@@ -31,12 +31,12 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
 
   // Простой метод для перевода пола на русский
   String _translateSex(String sex) {
-    if (sex == 'Пол') {
+    if (sex == 'male') {
       return 'Мужской';
     } else if (sex == 'female') {
       return 'Женский';
     }
-    // Если в будущем появятся другие варианты - fallback
+    // Если в будущем появятся другие варианты - вернём как есть
     return sex;
   }
 
@@ -90,8 +90,26 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
 
   /// Собираем введённые результаты и переходим на экран результата
   void _goResult() {
-    final results = <Map<String, dynamic>>[];
+    // 1) Проверяем, что все поля заполнены
+    bool allFilled = true;
+    for (var ind in _indicators) {
+      final id = ind['id'];
+      final textVal = _controllers[id]?.text.trim() ?? '';
+      if (textVal.isEmpty) {
+        allFilled = false;
+        break;
+      }
+    }
+    if (!allFilled) {
+      // Если хоть одно поле пустое, показываем ошибку и не переходим
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Введите все данные!')),
+      );
+      return;
+    }
 
+    // 2) Если все поля заполнены, формируем результаты
+    final results = <Map<String, dynamic>>[];
     for (var ind in _indicators) {
       final id = ind['id'];
       final name = ind['name'];
@@ -209,7 +227,7 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
     final ctrl = _controllers[indicator['id']]!;
     final bgColor = _getBackgroundColor(indicator);
 
-    // Получаем нормальный диапазон
+    // Получаем нормальный диапазон (если есть)
     final norm = widget.analysisService.getReferenceRange(
       indicator,
       widget.patientSex,
@@ -246,7 +264,7 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
               border: OutlineInputBorder(),
             ),
             onChanged: (_) {
-              setState(() {}); // Обновим фон, если значение зашло/вышло из нормы
+              setState(() {}); // Обновим фон, если значение вышло/вошло в норму
             },
           ),
           const SizedBox(height: 4),

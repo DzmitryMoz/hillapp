@@ -19,8 +19,7 @@ class NotificationService {
     const AndroidInitializationSettings androidSettings =
     AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings iOSSettings =
-    DarwinInitializationSettings();
+    const DarwinInitializationSettings iOSSettings = DarwinInitializationSettings();
 
     const InitializationSettings initSettings = InitializationSettings(
       android: androidSettings,
@@ -35,20 +34,39 @@ class NotificationService {
     );
   }
 
+  /// Метод для установки/перенастройки уведомления.
+  /// Если уведомление с таким [id] уже существовало, оно отменяется и создаётся заново.
+  /// Если [scheduledDate] уже прошла, можно либо не ставить уведомление, либо сдвинуть на будущее.
   Future<void> scheduleNotification({
     required int id,
     required String title,
     required String body,
     required DateTime scheduledDate,
   }) async {
-    // Преобразование DateTime в tz.TZDateTime с учетом локальной временной зоны
+    // (1) Отменяем старое уведомление с таким же id
+    await flutterLocalNotificationsPlugin.cancel(id);
+
+    // (2) Если scheduledDate уже в прошлом — решаем, что делать.
+    // Допустим, просто не ставим уведомление (или можно сдвинуть на следующий день).
+    final now = DateTime.now();
+    if (scheduledDate.isBefore(now)) {
+      // Если нужно сдвинуть на будущее — раскомментируйте:
+      // scheduledDate = scheduledDate.add(const Duration(days: 1));
+
+      // Или вообще не ставим уведомление:
+      print(
+          'NotificationService.scheduleNotification: время уже прошло ($scheduledDate), уведомление не установлено.');
+      return;
+    }
+
+    // Преобразование DateTime в tz.TZDateTime с учётом локальной временной зоны
     final tz.TZDateTime tzScheduledDate =
     tz.TZDateTime.from(scheduledDate, tz.local);
 
-    // Настраиваем стиль уведомления с большим изображением (иконка таблетки)
+    // Настраиваем стиль уведомления (пример с BigPictureStyleInformation)
     final BigPictureStyleInformation bigPictureStyleInformation =
     BigPictureStyleInformation(
-      DrawableResourceAndroidBitmap('@mipmap/pill_icon'),
+      const DrawableResourceAndroidBitmap('@mipmap/pill_icon'),
       contentTitle: '<b>$title</b>',
       summaryText: body,
       htmlFormatContentTitle: true,
@@ -67,8 +85,7 @@ class NotificationService {
     );
 
     final DarwinNotificationDetails iosPlatformChannelSpecifics =
-    DarwinNotificationDetails(
-      attachments: [DarwinNotificationAttachment('pill_icon.png')],
+    const DarwinNotificationDetails(
       subtitle: 'Приём препарата',
     );
 

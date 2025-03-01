@@ -1,5 +1,3 @@
-// lib/main.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -10,14 +8,15 @@ import 'utils/theme_manager.dart';
 // Импорт других нужных экранов
 import 'screens/splash_screen.dart';
 import 'screens/home_screen.dart';
-import 'calculator/screens/medication_calculator_screen.dart';
+// Импортируем обновлённый экран, где объявлен класс BmiAdvancedCalculatorScreen:
+import 'calculator/screens/imt_calculator_screen.dart';
 import 'calendar/screens/calendar_screen.dart';
 import 'screens/blood_pressure_screen.dart';
 import 'screens/profile_screen.dart';
 import 'analysis/screens/analysis_main_screen.dart';
 import 'analysis/screens/analysis_history_screen.dart';
 
-// Импорт сервиса уведомлений (обратите внимание на относительный путь)
+// Импорт сервиса уведомлений
 import 'services/notification_service.dart';
 
 void main() async {
@@ -46,8 +45,9 @@ class _HillAppState extends State<HillApp> {
 
   void _toggleTheme() {
     setState(() {
-      _themeMode =
-      (_themeMode == ThemeMode.light) ? ThemeMode.dark : ThemeMode.light;
+      _themeMode = (_themeMode == ThemeMode.light)
+          ? ThemeMode.dark
+          : ThemeMode.light;
     });
   }
 
@@ -72,8 +72,8 @@ class _HillAppState extends State<HillApp> {
       routes: {
         '/splash': (context) => const SplashScreen(),
         '/home': (context) => const HomeScreen(),
-        '/medication_calculator': (context) =>
-        const MedicationCalculatorScreen(),
+        // Здесь используем класс BmiAdvancedCalculatorScreen
+        '/medication_calculator': (context) => const BmiAdvancedCalculatorScreen(),
         '/calendar': (context) => const CalendarScreen(),
         '/analysis_main': (context) => const AnalysisMainScreen(),
         '/analysis_history': (context) => const AnalysisHistoryScreen(),

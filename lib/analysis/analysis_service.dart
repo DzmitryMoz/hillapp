@@ -37,6 +37,17 @@ class AnalysisService {
     return found;
   }
 
+  /// Вспомогательный метод для получения русского названия исследования по его id.
+  String getRussianResearchTitle(String researchId) {
+    final Map<String, String> russianTitles = {
+      'cbc': 'Общий анализ крови',
+      'biochem': 'Биохимия',
+      'urinalysis': 'Общий анализ мочи',
+      // Добавьте другие исследования по необходимости
+    };
+    return russianTitles[researchId] ?? researchId;
+  }
+
   /// Возвращает диапазон [min, max] для заданного показателя, пола (sex) и возраста (age).
   /// Возможные ключи: "0-1", "1-6", "7-14", "14+", "adult", "any".
   List<double>? getReferenceRange(

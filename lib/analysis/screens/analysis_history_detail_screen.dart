@@ -1,9 +1,12 @@
+// lib/analysis/screens/analysis_history_detail_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'dart:convert';
 import '../analysis_colors.dart';
 import '../db/analysis_history_db.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart'; // Для форматирования даты
 
 class AnalysisHistoryDetailScreen extends StatefulWidget {
   final Map<String, dynamic> item;
@@ -32,8 +35,8 @@ class _AnalysisHistoryDetailScreenState
   /// чтобы избежать бесконечного спиннера.
   Future<void> _loadAnalysisData() async {
     try {
-      final String jsonString = await rootBundle
-          .loadString('lib/analysis/data/analysis_data.json');
+      final String jsonString =
+      await rootBundle.loadString('lib/analysis/data/analysis_data.json');
       final Map<String, dynamic> data = json.decode(jsonString);
       setState(() {
         _analysisData = data;
@@ -99,13 +102,47 @@ class _AnalysisHistoryDetailScreenState
     );
   }
 
+  /// Форматируем дату в "dd.MM.yy HH:mm"
+  String _formatDate(String dateString) {
+    try {
+      final dt = DateTime.parse(dateString);
+      return DateFormat('dd.MM.yy HH:mm').format(dt);
+    } catch (_) {
+      return dateString; // если не парсится, выводим как есть
+    }
+  }
+
+  /// Преобразуем researchId в русское название
+  String _getRussianResearchTitle(String researchId) {
+    final Map<String, String> russianTitles = {
+      'cbc': 'Общий анализ крови',
+      'biochem': 'Биохимия',
+      'urinalysis': 'Общий анализ мочи',
+      // при необходимости добавьте ещё
+    };
+    return russianTitles[researchId] ?? researchId;
+  }
+
+  /// Если надо перевести пол:
+  String _translateSex(String sex) {
+    if (sex.toLowerCase() == 'male') return 'Мужской';
+    if (sex.toLowerCase() == 'female') return 'Женский';
+    return sex;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final date = widget.item['date'] ?? '';
+    final rawDate = widget.item['date'] ?? '';
+    final dateFormatted = _formatDate(rawDate);
+
     final pName = widget.item['patientName'] ?? '';
     final pAge = widget.item['patientAge'] ?? 0;   // int
-    final pSex = widget.item['patientSex'] ?? ''; // 'male' / 'female'
+    final pSexRaw = widget.item['patientSex'] ?? '';
+    final pSex = _translateSex(pSexRaw);
+
     final rId = widget.item['researchId'] ?? '';
+    final rTitle = _getRussianResearchTitle(rId);
+
     final rawResults = widget.item['results'] ?? '';
 
     // Пробуем распарсить сохранённые результаты (список показателей).
@@ -148,33 +185,57 @@ class _AnalysisHistoryDetailScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Шапка с основной информацией
+            // Шапка с основной информацией (центрируем содержимое)
             Container(
+              alignment: Alignment.center,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Дата: $date',
-                    style:
-                    const TextStyle(fontWeight: FontWeight.bold),
+                    dateFormatted,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
                   ),
                   const SizedBox(height: 4),
-                  Text('Пациент: $pName, $pAge лет, $pSex'),
+                  Text(
+                    'Пациент: $pName, $pAge лет, $pSex',
+                    style: const TextStyle(fontSize: 15),
+                  ),
                   const SizedBox(height: 4),
-                  Text('Исследование: $rId'),
+                  Text(
+                    'Исследование: $rTitle',
+                    style: const TextStyle(fontSize: 15),
+                  ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
 
-            // Если не удалось распарсить results — показываем "сырые" данные
-            if (parsedResults.isEmpty)
-              Text('Сырые результаты:\n$rawResults')
+            // Если нет показателей или results пустые => выводим ошибку
+            if (parsedResults.isEmpty ||
+                rawResults.toString().trim().isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Данные не были введены!\n'
+                      'Невозможно отобразить расшифровку.',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 16,
+                  ),
+                ),
+              )
             else
             // Иначе выводим каждый показатель
               ListView.separated(
@@ -189,7 +250,7 @@ class _AnalysisHistoryDetailScreenState
                   return _buildResultCard(
                     resItem,
                     rId,
-                    pSex.toString(),
+                    pSexRaw.toString(),
                     (pAge is int) ? pAge : 0,
                   );
                 },
@@ -285,13 +346,17 @@ class _AnalysisHistoryDetailScreenState
             Text('Норма: $minVal – $maxVal'),
             if (cause.isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text('Причины: $cause',
-                  style: const TextStyle(color: Colors.redAccent)),
+              Text(
+                'Причины: $cause',
+                style: const TextStyle(color: Colors.redAccent),
+              ),
             ],
             if (recommendation.isNotEmpty) ...[
               const SizedBox(height: 4),
-              Text('Рекомендации: $recommendation',
-                  style: const TextStyle(color: Colors.blue)),
+              Text(
+                'Рекомендации: $recommendation',
+                style: const TextStyle(color: Colors.blue),
+              ),
             ],
           ],
         ),
@@ -309,14 +374,7 @@ class _AnalysisHistoryDetailScreenState
       return [0, 999999];
     }
 
-    // Предполагаем, что в норме:
-    //  {
-    //    "male": {"adult": [4.0, 9.0]},
-    //    "female": {"adult": [4.0, 9.0]},
-    //    "any": [3.5, 10.0]
-    //  }
-    // Упрощённо, если sex = 'male' — берём male->adult или male->any
-    // если нет, берём 'any', иначе [0..999999].
+    // Упрощённая логика
     if (normalRange.containsKey(sex)) {
       final sexMap = normalRange[sex];
       if (sexMap is Map<String, dynamic>) {
@@ -328,7 +386,7 @@ class _AnalysisHistoryDetailScreenState
       }
     }
 
-    // Если не найдено, пытаемся 'any'
+    // Если не нашли, пытаемся 'any'
     if (normalRange.containsKey('any')) {
       return _parseRangeList(normalRange['any']);
     }

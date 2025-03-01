@@ -115,7 +115,6 @@ enum AdministrationRoute {
   oral,             // Перорально
   intravenous,      // Внутривенно
   intramuscular,    // Внутримышечно
-  intrathecal,      // Интратекально
   subcutaneous,     // Подкожно
   sublingual,       // Сублингвально
   transbuccal,      // Трансбуккально
@@ -123,11 +122,8 @@ enum AdministrationRoute {
   vaginal,          // Вагинально
   intranasal,       // Интраназально
   inhalation,       // Ингаляционно
-  transdermal,      // Трансдермально
   topical,          // Наружно
   intradermal,      // Внутрикожно
-  intracardiac,     // Внутрисердечно
-  intracavernous,   // Внутрикавернозно
 }
 
 /// Расширение для удобного вывода пути введения на русском
@@ -135,17 +131,15 @@ extension AdministrationRouteExtension on AdministrationRoute {
   String get displayName {
     switch (this) {
       case AdministrationRoute.oral:
-        return 'Перорально';
+        return 'Внутрь';
       case AdministrationRoute.intravenous:
         return 'Внутривенно';
       case AdministrationRoute.intramuscular:
         return 'Внутримышечно';
-      case AdministrationRoute.intrathecal:
-        return 'Интратекально';
       case AdministrationRoute.subcutaneous:
         return 'Подкожно';
       case AdministrationRoute.sublingual:
-        return 'Сублингвально';
+        return 'Под язык';
       case AdministrationRoute.transbuccal:
         return 'Трансбуккально';
       case AdministrationRoute.rectal:
@@ -153,19 +147,13 @@ extension AdministrationRouteExtension on AdministrationRoute {
       case AdministrationRoute.vaginal:
         return 'Вагинально';
       case AdministrationRoute.intranasal:
-        return 'Интраназально';
+        return 'В нос';
       case AdministrationRoute.inhalation:
         return 'Ингаляционно';
-      case AdministrationRoute.transdermal:
-        return 'Трансдермально';
       case AdministrationRoute.topical:
         return 'Наружно';
       case AdministrationRoute.intradermal:
         return 'Внутрикожно';
-      case AdministrationRoute.intracardiac:
-        return 'Внутрисердечно';
-      case AdministrationRoute.intracavernous:
-        return 'Внутрикавернозно';
     }
   }
 }

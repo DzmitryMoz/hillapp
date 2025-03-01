@@ -6,7 +6,7 @@ import '../analysis_colors.dart';
 import '../analysis_service.dart';
 import '../db/analysis_history_db.dart';
 
-class AnalysisResultScreen extends StatelessWidget {
+class AnalysisResultScreen extends StatefulWidget {
   final String researchId;
   final AnalysisService analysisService;
   final String patientName;
@@ -24,15 +24,37 @@ class AnalysisResultScreen extends StatelessWidget {
     required this.results,
   }) : super(key: key);
 
+  @override
+  State<AnalysisResultScreen> createState() => _AnalysisResultScreenState();
+}
+
+class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
+  bool _isSaved = false; // Флаг, чтобы сохранить анализ только один раз
+
+  /// Перевод пола на русский язык
+  String _translateSex(String sex) {
+    final lower = sex.toLowerCase();
+    if (lower == 'male') return 'Мужской';
+    if (lower == 'female') return 'Женский';
+    return sex; // fallback, если вдруг другое значение
+  }
+
   Future<void> _saveToHistory(BuildContext context) async {
+    // Если уже сохранено — не сохраняем повторно
+    if (_isSaved) return;
+
+    setState(() {
+      _isSaved = true;
+    });
+
     final record = {
       'date': DateTime.now().toIso8601String(),
-      'patientName': patientName,
-      'patientAge': patientAge,
-      'patientSex': patientSex,
-      'researchId': researchId,
+      'patientName': widget.patientName,
+      'patientAge': widget.patientAge,
+      'patientSex': widget.patientSex, // 'male'/'female'
+      'researchId': widget.researchId,
       // Сохраняем результаты в JSON
-      'results': jsonEncode(results),
+      'results': jsonEncode(widget.results),
     };
 
     try {
@@ -42,7 +64,10 @@ class AnalysisResultScreen extends StatelessWidget {
       );
     } catch (e) {
       // Если, например, таблица не найдена => покажем ошибку
-      print('Ошибка при сохранении: $e');
+      // Снова разрешаем сохранять
+      setState(() {
+        _isSaved = false;
+      });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Ошибка при сохранении: $e')),
       );
@@ -51,7 +76,7 @@ class AnalysisResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final research = analysisService.findResearchById(researchId);
+    final research = widget.analysisService.findResearchById(widget.researchId);
     final title = research?['title'] ?? 'Результаты';
 
     return Scaffold(
@@ -63,37 +88,47 @@ class AnalysisResultScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Информация о пациенте
+          // --- Информация о пациенте (панель с белым фоном, скруглёнными углами и тенью) ---
           Container(
+            alignment: Alignment.center,
             padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               boxShadow: const [
                 BoxShadow(
                   color: Colors.black12,
                   blurRadius: 4,
-                  offset: Offset(0,2),
+                  offset: Offset(0, 2),
                 )
               ],
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Имя: $patientName',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text('Возраст: $patientAge, Пол: $patientSex'),
+                Text(
+                  'Имя: ${widget.patientName}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Возраст: ${widget.patientAge}, Пол: ${_translateSex(widget.patientSex)}',
+                  style: const TextStyle(fontSize: 15),
+                ),
               ],
             ),
           ),
+
+          // --- Список результатов ---
+          ...widget.results.map((r) => _buildResultItem(r, research)).toList(),
+
           const SizedBox(height: 16),
 
-          // Выводим список результатов
-          ...results.map((r) => _buildResultItem(r, research)).toList(),
-
-          const SizedBox(height: 16),
-
-          // Кнопки
+          // --- Кнопки ---
           Row(
             children: [
               Expanded(
@@ -110,7 +145,7 @@ class AnalysisResultScreen extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kMintDark,
                   ),
-                  child: const Text('Сохранить'),
+                  child: Text(_isSaved ? 'Уже сохранено' : 'Сохранить'),
                 ),
               ),
             ],
@@ -121,20 +156,16 @@ class AnalysisResultScreen extends StatelessWidget {
   }
 
   /// Строит виджет для одного показателя
-  Widget _buildResultItem(Map<String, dynamic> res, Map<String, dynamic>? research) {
+  Widget _buildResultItem(
+      Map<String, dynamic> res,
+      Map<String, dynamic>? research,
+      ) {
     final id = res['id'];
     final name = res['name'] ?? '';
-    // В вашем коде 'status' может быть заранее сгенерирован,
-    // но мы сейчас хотим вычислять его из JSON.
-    // Если нужно использовать старое значение — оставьте 'final status = res['status']'.
-    // Или вычислим заново в зависимости от нормы:
-
     final dynamic rawValue = res['value'];
     double? value;
     if (rawValue is num) {
       value = rawValue.toDouble();
-    } else {
-      // Если не число, выводим как строку
     }
 
     // Находим описание показателя в JSON (через research)
@@ -156,17 +187,17 @@ class AnalysisResultScreen extends StatelessWidget {
       );
     }
 
-    final bgColor = Colors.white; // будет сменяться ниже при статусе?
     // Получаем нормальные границы
     final normalRange = indicator['normalRange'] as Map<String, dynamic>?;
-
-    // Извлечём массив [min, max] в зависимости от пола, возраста
-    List<double> range = _findRangeForPatient(normalRange, patientSex, patientAge);
-
+    final range = _findRangeForPatient(
+      normalRange,
+      widget.patientSex,
+      widget.patientAge,
+    );
     final double minVal = range[0];
     final double maxVal = range[1];
 
-    // Определяем статус, причину и рекомендации
+    // Определяем статус, причины, рекомендации
     String computedStatus = 'В норме';
     String cause = '';
     String recommendation = '';
@@ -181,7 +212,6 @@ class AnalysisResultScreen extends StatelessWidget {
         cause = indicator['causesHigher'] ?? '';
         recommendation = indicator['recommendationHigher'] ?? '';
       }
-      // Иначе value внутри [minVal, maxVal] => "В норме"
     }
 
     return Container(
@@ -200,19 +230,20 @@ class AnalysisResultScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text('Статус: $computedStatus'),
-          // Показать нормальный диапазон
           Text('Норма: $minVal – $maxVal'),
-
-          // Если есть причины/рекомендации
           if (cause.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text('Причины: $cause',
-                style: const TextStyle(color: Colors.redAccent)),
+            Text(
+              'Причины: $cause',
+              style: const TextStyle(color: Colors.redAccent),
+            ),
           ],
           if (recommendation.isNotEmpty) ...[
             const SizedBox(height: 6),
-            Text('Рекомендации: $recommendation',
-                style: const TextStyle(color: Colors.blue)),
+            Text(
+              'Рекомендации: $recommendation',
+              style: const TextStyle(color: Colors.blue),
+            ),
           ],
         ],
       ),
@@ -241,33 +272,21 @@ class AnalysisResultScreen extends StatelessWidget {
       return [0, 999999];
     }
 
-    // Например, в JSON:
-    // "normalRange": {
-    //   "male": { "adult": [4.0, 9.0] },
-    //   "female": { "adult": [4.0, 9.0] }
-    // }
-    // Пытаемся взять normalRange[sex], затем "adult" или "any"
     if (normalRange.containsKey(sex)) {
       final sexMap = normalRange[sex];
       if (sexMap is Map<String, dynamic>) {
-        // Пытаемся взять "adult"
         if (sexMap.containsKey('adult')) {
-          final list = sexMap['adult'];
-          return _parseRangeList(list);
+          return _parseRangeList(sexMap['adult']);
         } else if (sexMap.containsKey('any')) {
-          final list = sexMap['any'];
-          return _parseRangeList(list);
+          return _parseRangeList(sexMap['any']);
         }
       }
     }
 
-    // Если не нашли — пробуем "any" в корне
     if (normalRange.containsKey('any')) {
-      final list = normalRange['any'];
-      return _parseRangeList(list);
+      return _parseRangeList(normalRange['any']);
     }
 
-    // Иначе [0..999999] как fallback
     return [0, 999999];
   }
 

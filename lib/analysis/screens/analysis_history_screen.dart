@@ -1,6 +1,7 @@
 // lib/analysis/screens/analysis_history_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // Добавляем для форматирования даты
 import '../analysis_colors.dart';
 import '../db/analysis_history_db.dart';
 import 'analysis_history_detail_screen.dart';
@@ -88,6 +89,34 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen> {
     );
   }
 
+  // Форматируем дату в "dd.MM.yy HH:mm"
+  String _formatDate(String dateString) {
+    try {
+      final dt = DateTime.parse(dateString);
+      return DateFormat('dd.MM.yy HH:mm').format(dt);
+    } catch (_) {
+      return dateString; // Если парсинг не удался, возвращаем как есть
+    }
+  }
+
+  // Преобразует id исследования в русское название.
+  String getResearchTitle(String researchId) {
+    final Map<String, String> russianTitles = {
+      'cbc': 'Общий анализ крови',
+      'biochem': 'Биохимия',
+      'urinalysis': 'Общий анализ мочи',
+      // Добавьте другие исследования по необходимости
+    };
+    return russianTitles[researchId] ?? researchId;
+  }
+
+  // Преобразует значение пола (male/female) в русский вид.
+  String getRussianSex(String sex) {
+    if (sex.toLowerCase() == 'male') return 'Мужской';
+    if (sex.toLowerCase() == 'female') return 'Женский';
+    return sex;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,19 +143,22 @@ class _AnalysisHistoryScreenState extends State<AnalysisHistoryScreen> {
 
   Widget _buildHistoryItem(Map<String, dynamic> item) {
     final id = item['id'];
-    final date = item['date'] ?? '';
+    final rawDate = item['date'] ?? '';
+    final formattedDate = _formatDate(rawDate);
     final pName = item['patientName'] ?? '';
-    final pSex = item['patientSex'] ?? '';
     final pAge = item['patientAge']?.toString() ?? '';
+    final pSexRaw = item['patientSex'] ?? '';
+    final pSex = getRussianSex(pSexRaw);
     final rId = item['researchId'] ?? '';
+    final rTitle = getResearchTitle(rId);
 
     return Card(
       child: ListTile(
         title: Text(
-          'Дата: $date',
+          'Дата и время: $formattedDate',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        subtitle: Text('Пациент: $pName, $pAge лет, $pSex\nИсследование: $rId'),
+        subtitle: Text('Пациент: $pName, $pAge лет, $pSex\nИсследование: $rTitle'),
         onTap: () {
           Navigator.push(
             context,

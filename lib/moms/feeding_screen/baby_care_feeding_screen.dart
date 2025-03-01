@@ -202,7 +202,7 @@ class FeedingScreen extends StatelessWidget {
 ✅ Первые овощи: **кабачок, брокколи, цветная капуста, морковь**.  
 ✅ Начинаем с **½ чайной ложки**, доводя до **100-200 г**.  
 
-### **🔹 Каши (если ребёнок плохо набирает вес)**  
+### **🔹 Каши (если ребёнок плохо набирает вес)**
 ✅ **С 6 месяцев** – безглютеновые каши: **гречневая, рисовая, кукурузная**.  
 ✅ С 7 месяцев – можно **овсяную, мультизлаковую**.  
 ✅ Начинаем с **½ чайной ложки**, доводя до **100-200 г**.  
@@ -240,20 +240,20 @@ class FeedingScreen extends StatelessWidget {
 ✅ **С 10 месяцев** – **хек, треска, минтай** (раз в неделю).  
 ✅ Начинаем с **½ чайной ложки**, доводя до **50-70 г**.  
 
-### **🔹 Яйцо**  
+### **🔹 Яйцо**
 ✅ **С 10 месяцев** – **только желток**.  
 ✅ Начинаем с **1/8 желтка**, доводя до **½ желтка в неделю**.  
 
 ---
 
 ## **🛢 5. Масла, печенье и прочие добавки**
-### **🔹 Масла**  
+### **🔹 Масла**
 ✅ **Растительное масло** – с 6 месяцев в пюре (**⅓ чайной ложки**).  
 ✅ **Сливочное масло** – с 8 месяцев в каши (**⅛ чайной ложки**).  
 
-### **🔹 Печенье**  
+### **🔹 Печенье**
 ✅ **С 9 месяцев** – детское печенье без сахара.  
-✅ Начинаем с **⅛ шт., доводя до ½ шт. в день**.  
+✅ Начинаем с **⅛ шт., доводя до **½ шт. в день**.  
 
 ---
 
@@ -264,7 +264,7 @@ class FeedingScreen extends StatelessWidget {
 ✔ **Прикорм – это дополнение, а не замена грудного молока**!  
 ✔ **Не заставляйте ребёнка есть!**  
 
-🚨 **Когда обращаться к врачу?**  
+🚨 **Когда обращаться к врачу?**
 ✔ Если появилась **сыпь, покраснение, колики**.  
 ✔ Если **у малыша длительное расстройство стула**.  
 ✔ Если ребёнок **категорически отказывается от еды**.  
@@ -284,10 +284,10 @@ class FeedingScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
+          // 1) Грудное вскармливание
           SectionButton(
             title: 'Грудное вскармливание',
             icon: Icons.pregnant_woman,
-            gradientColors: const [Color(0xFF42A5F5), Color(0xFF1976D2)],
             onTap: () {
               Navigator.push(
                 context,
@@ -300,10 +300,10 @@ class FeedingScreen extends StatelessWidget {
               );
             },
           ),
+          // 2) Искусственное вскармливание
           SectionButton(
             title: 'Искусственное вскармливание',
             icon: Icons.local_drink,
-            gradientColors: const [Color(0xFF66BB6A), Color(0xFF388E3C)],
             onTap: () {
               Navigator.push(
                 context,
@@ -316,10 +316,10 @@ class FeedingScreen extends StatelessWidget {
               );
             },
           ),
+          // 3) Введение прикорма
           SectionButton(
             title: 'Введение прикорма',
             icon: Icons.restaurant,
-            gradientColors: const [Color(0xFFFFA726), Color(0xFFF57C00)],
             onTap: () {
               Navigator.push(
                 context,
@@ -338,18 +338,17 @@ class FeedingScreen extends StatelessWidget {
   }
 }
 
+/// Кнопка меньшего размера с цветом [0xFFFFCCBC -> 0xFFD84315]
 class SectionButton extends StatelessWidget {
   final String title;
   final VoidCallback onTap;
   final IconData? icon;
-  final List<Color>? gradientColors;
 
   const SectionButton({
     Key? key,
     required this.title,
     required this.onTap,
     this.icon,
-    this.gradientColors,
   }) : super(key: key);
 
   @override
@@ -358,43 +357,46 @@ class SectionButton extends StatelessWidget {
       duration: const Duration(milliseconds: 300),
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16.0),
+        borderRadius: BorderRadius.circular(12.0),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
-        gradient: LinearGradient(
-          colors: gradientColors ?? [Color(0xFFFFCCBC), Color(0xFFD84315)],
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFFFCCBC),
+            Color(0xFFD84315),
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16.0),
+        borderRadius: BorderRadius.circular(12.0),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16.0),
+          borderRadius: BorderRadius.circular(12.0),
           splashColor: Colors.white.withOpacity(0.3),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+            padding: const EdgeInsets.all(16.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, color: Colors.white, size: 28),
-                  const SizedBox(width: 12),
+                  Icon(icon, color: Colors.white, size: 24),
+                  const SizedBox(width: 10),
                 ],
                 Flexible(
                   child: Text(
                     title,
                     style: const TextStyle(
-                      fontSize: 18.0,
+                      fontSize: 16.0,
                       color: Colors.white,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                       letterSpacing: 0.5,
                     ),
                     textAlign: TextAlign.center,

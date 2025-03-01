@@ -23,13 +23,14 @@ class _AnalysisPatientFormState extends State<AnalysisPatientForm> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _ageCtrl = TextEditingController();
-  String _sex = 'male'; // По умолчанию «male»
+  String? _sex; // Изначально не выбрано, значение null
 
   void _goNext() {
     if (_formKey.currentState?.validate() ?? false) {
       final name = _nameCtrl.text.trim();
       final age = int.parse(_ageCtrl.text.trim());
-      final sex = _sex;
+      // Здесь _sex точно не null, так как форма валидируется
+      final sex = _sex!;
 
       // Переходим на экран ввода показателей
       Navigator.push(
@@ -115,29 +116,63 @@ class _AnalysisPatientFormState extends State<AnalysisPatientForm> {
                   },
                 ),
                 const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const Text(
-                      'Пол:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(width: 16),
-                    Radio<String>(
-                      value: 'male',
-                      groupValue: _sex,
-                      onChanged: (val) =>
-                          setState(() => _sex = val ?? 'male'),
-                    ),
-                    const Text('Муж.'),
-                    const SizedBox(width: 16),
-                    Radio<String>(
-                      value: 'female',
-                      groupValue: _sex,
-                      onChanged: (val) =>
-                          setState(() => _sex = val ?? 'female'),
-                    ),
-                    const Text('Жен.'),
-                  ],
+                // Оборачиваем выбор пола в FormField для валидации
+                FormField<String>(
+                  validator: (value) {
+                    if (_sex == null) {
+                      return 'Выберите пол';
+                    }
+                    return null;
+                  },
+                  builder: (FormFieldState<String> state) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Text(
+                              'Пол:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(width: 16),
+                            Radio<String>(
+                              value: 'male',
+                              groupValue: _sex,
+                              onChanged: (val) {
+                                setState(() {
+                                  _sex = val;
+                                  state.didChange(val);
+                                });
+                              },
+                            ),
+                            const Text('Муж.'),
+                            const SizedBox(width: 16),
+                            Radio<String>(
+                              value: 'female',
+                              groupValue: _sex,
+                              onChanged: (val) {
+                                setState(() {
+                                  _sex = val;
+                                  state.didChange(val);
+                                });
+                              },
+                            ),
+                            const Text('Жен.'),
+                          ],
+                        ),
+                        if (state.hasError)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 16.0),
+                            child: Text(
+                              state.errorText ?? '',
+                              style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                  fontSize: 12),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
                 SizedBox(

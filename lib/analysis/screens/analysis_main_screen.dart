@@ -57,6 +57,9 @@ class _AnalysisMainScreenState extends State<AnalysisMainScreen> {
   }
 
   void _selectResearch(Map<String, dynamic> research) {
+    // Обновляем название исследования на русское, чтобы в истории
+    // сохранялся русский вариант (например, "Общий анализ крови" вместо "cbc")
+    research['title'] = getResearchTitle(research);
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -68,13 +71,13 @@ class _AnalysisMainScreenState extends State<AnalysisMainScreen> {
     );
   }
 
-  // Функция для получения названия исследования на русском языке,
-  // при этом значение id остаётся неизменным для корректного разделения
+  // Функция для получения названия исследования на русском языке.
+  // При этом значение id остаётся неизменным для корректного разделения.
   String getResearchTitle(Map<String, dynamic> item) {
     final Map<String, String> russianTitles = {
-      'cbc': 'Общий анализ крови',
-      'biochem': 'Биохимия',
-      'urinalysis': 'Общий анализ мочи',
+      'OAK': 'Общий анализ крови',
+      'BAK': 'Биохимический анализ крови',
+      'OAM': 'Общий анализ мочи',
       // Добавьте другие исследования по необходимости
     };
     return russianTitles[item['id']] ?? (item['title'] ?? '');
