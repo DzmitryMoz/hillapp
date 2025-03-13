@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-// Удаляем url_launcher, т.к. теперь делаем всплывающие окна, а не открываем ссылки
-// import 'package:url_launcher/url_launcher.dart';
-
 import '../utils/app_colors.dart';
-import 'app_info_screen.dart'; // Импортируем наш новый экран «О приложении»
+import 'app_info_screen.dart';
+// Импортируем сервис уведомлений
+import '../services/daily_reminder_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -23,6 +22,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     setState(() {
       notificationsEnabled = value;
     });
+
+    // Если уведомления включены — планируем ежедневные уведомления (на 12:00 и 21:00),
+    // если выключены — отменяем их
+    if (notificationsEnabled) {
+      DailyReminderService().scheduleDailyReminder();
+    } else {
+      DailyReminderService().cancelReminder();
+    }
   }
 
   // 1. Написать нам (всплывающее окно)
@@ -186,8 +193,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ),
-        trailing:
-        const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
         onTap: onTap,
       ),
     );

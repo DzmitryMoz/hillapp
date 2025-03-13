@@ -36,71 +36,123 @@ class DailyReminderService {
 
   // Если нужно обработать клик на уведомление:
   void _onNotificationResponse(NotificationResponse response) {
-    // Можно открыть нужный экран, если используете Named Routes
-    // Например:
-    // if (response.payload == 'daily_health') {
-    //   Navigator.pushNamed(context, '/growth_tracking');
-    // }
+    // Здесь можно реализовать навигацию по экрану при нажатии на уведомление
   }
 
-  /// Запланировать уведомление, повторяющееся каждый день в заданное [hour, minute].
-  Future<void> scheduleDailyReminder({
-    int hour = 9,
-    int minute = 0,
-  }) async {
-    // Удалим старое, если нужно
-    // await _flutterLocalNotificationsPlugin.cancelAll();
-
-    // Стиль уведомления
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'daily_health_channel',
-      'Ежедневный контроль здоровья',
-      channelDescription: 'Напоминание вносить показатели роста/веса',
-      importance: Importance.max,
-      priority: Priority.high,
-      icon: '@mipmap/ic_launcher', // Иконка приложения
-    );
-
-    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
-
-    const NotificationDetails notifDetails = NotificationDetails(
-      android: androidDetails,
-      iOS: iosDetails,
-    );
-
-    // Время для ежедневного уведомления
-    // Используем локальную временную зону
+  /// Запланировать уведомления, повторяющиеся каждый день в 12:00 и 21:00.
+  Future<void> scheduleDailyReminder() async {
+    // Общий стиль для уведомлений
     final now = tz.TZDateTime.now(tz.local);
-    // Запланируем на сегодня в [hour:minute], если уже прошло — на завтра
-    var scheduleDate = tz.TZDateTime(
+
+    // --- Уведомление на 12:00 ---
+    var scheduleDateNoon = tz.TZDateTime(
       tz.local,
       now.year,
       now.month,
       now.day,
-      hour,
-      minute,
+      12,
+      0,
     );
-    if (scheduleDate.isBefore(now)) {
-      scheduleDate = scheduleDate.add(const Duration(days: 1));
+    if (scheduleDateNoon.isBefore(now)) {
+      scheduleDateNoon = scheduleDateNoon.add(const Duration(days: 1));
     }
 
+    // Креативный стиль для дневного уведомления
+    final BigTextStyleInformation bigTextStyleNoon = BigTextStyleInformation(
+      'День – отличный повод проверить своё здоровье и сделать шаг к лучшей версии себя!',
+      htmlFormatBigText: true,
+      contentTitle: 'Полдень – время обновления!',
+      htmlFormatContentTitle: true,
+      summaryText: 'Ежедневное напоминание для вашего здоровья',
+      htmlFormatSummaryText: true,
+    );
+
+    final AndroidNotificationDetails androidNoonDetails =
+    AndroidNotificationDetails(
+      'daily_health_channel_noon',
+      'Ежедневный контроль здоровья (день)',
+      channelDescription: 'Дневное напоминание для заботы о вашем здоровье',
+      importance: Importance.max,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      styleInformation: bigTextStyleNoon,
+    );
+
+    const DarwinNotificationDetails iosDetails = DarwinNotificationDetails();
+
+    final NotificationDetails notifNoonDetails = NotificationDetails(
+      android: androidNoonDetails,
+      iOS: iosDetails,
+    );
+
     await _flutterLocalNotificationsPlugin.zonedSchedule(
-      12345, // id уведомления
-      'Пора ввести показатели',
-      'Не забывайте контролировать рост и вес — здоровье превыше всего!',
-      scheduleDate,
-      notifDetails,
+      12345, // id уведомления для 12:00
+      'Полдень – время обновления!',
+      'Пришло время проверить свои показатели и сделать паузу для заботы о себе!',
+      scheduleDateNoon,
+      notifNoonDetails,
       androidAllowWhileIdle: true,
       uiLocalNotificationDateInterpretation:
       UILocalNotificationDateInterpretation.absoluteTime,
-      // Повторяем раз в сутки:
+      // Повторяем каждый день в указанное время:
       matchDateTimeComponents: DateTimeComponents.time,
-      // => каждый день в [hour:minute]
+    );
+
+    // --- Уведомление на 21:00 ---
+    var scheduleDateEvening = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      21,
+      0,
+    );
+    if (scheduleDateEvening.isBefore(now)) {
+      scheduleDateEvening = scheduleDateEvening.add(const Duration(days: 1));
+    }
+
+    // Креативный стиль для вечернего уведомления
+    final BigTextStyleInformation bigTextStyleEvening = BigTextStyleInformation(
+      'Вечер – прекрасное время подвести итоги дня и настроиться на завтрашние победы!',
+      htmlFormatBigText: true,
+      contentTitle: 'Ночь для заботы о себе!',
+      htmlFormatContentTitle: true,
+      summaryText: 'Ежедневное напоминание для вашего здоровья',
+      htmlFormatSummaryText: true,
+    );
+
+    final AndroidNotificationDetails androidEveningDetails =
+    AndroidNotificationDetails(
+      'daily_health_channel_evening',
+      'Ежедневный контроль здоровья (вечер)',
+      channelDescription: 'Вечернее напоминание для заботы о вашем здоровье',
+      importance: Importance.max,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      styleInformation: bigTextStyleEvening,
+    );
+
+    final NotificationDetails notifEveningDetails = NotificationDetails(
+      android: androidEveningDetails,
+      iOS: iosDetails,
+    );
+
+    await _flutterLocalNotificationsPlugin.zonedSchedule(
+      12346, // id уведомления для 21:00
+      'Ночь для заботы о себе!',
+      'Вечер – отличное время подвести итоги дня и настроиться на завтрашние победы!',
+      scheduleDateEvening,
+      notifEveningDetails,
+      androidAllowWhileIdle: true,
+      uiLocalNotificationDateInterpretation:
+      UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
-  /// Отменить уведомление (если надо)
+  /// Отменить уведомления (если надо)
   Future<void> cancelReminder() async {
     await _flutterLocalNotificationsPlugin.cancel(12345);
+    await _flutterLocalNotificationsPlugin.cancel(12346);
   }
 }

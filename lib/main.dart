@@ -54,6 +54,13 @@ class _HillAppState extends State<HillApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      // Фиксируем масштаб текста для всего приложения
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+          child: child!,
+        );
+      },
       title: 'Карманный доктор',
       debugShowCheckedModeBanner: false,
       theme: ThemeManager.lightTheme.copyWith(useMaterial3: true),
@@ -73,7 +80,8 @@ class _HillAppState extends State<HillApp> {
         '/splash': (context) => const SplashScreen(),
         '/home': (context) => const HomeScreen(),
         // Здесь используем класс BmiAdvancedCalculatorScreen
-        '/medication_calculator': (context) => const BmiAdvancedCalculatorScreen(),
+        '/medication_calculator': (context) =>
+        const BmiAdvancedCalculatorScreen(),
         '/calendar': (context) => const CalendarScreen(),
         '/analysis_main': (context) => const AnalysisMainScreen(),
         '/analysis_history': (context) => const AnalysisHistoryScreen(),
