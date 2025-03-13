@@ -1,22 +1,18 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Цвета, как было раньше
+/// Цвета
 const Color kMintDark = Color(0xFF00B4AB);
 const Color kBackground = Color(0xFFE7F7F7);
 
 /// Единицы измерения
-enum UnitSystem {
-  metric,
-  imperial,
-}
+enum UnitSystem { metric, imperial }
 
 /// Пол
-enum Sex {
-  male,
-  female,
-}
+enum Sex { male, female }
 
 class BmiAdvancedCalculatorScreen extends StatefulWidget {
   const BmiAdvancedCalculatorScreen({Key? key}) : super(key: key);
@@ -26,37 +22,35 @@ class BmiAdvancedCalculatorScreen extends StatefulWidget {
       _BmiAdvancedCalculatorScreenState();
 }
 
-class _BmiAdvancedCalculatorScreenState
-    extends State<BmiAdvancedCalculatorScreen>
+class _BmiAdvancedCalculatorScreenState extends State<BmiAdvancedCalculatorScreen>
     with SingleTickerProviderStateMixin {
   UnitSystem _selectedUnit = UnitSystem.metric;
   Sex _selectedSex = Sex.male;
 
-  // Слайдеры + поля ввода
   double _weightSlider = 70.0;
   double _heightSlider = 170.0;
   final TextEditingController _weightCtrl = TextEditingController();
   final TextEditingController _heightCtrl = TextEditingController();
-  final TextEditingController _ageCtrl = TextEditingController(text: '25');
+  final TextEditingController _ageCtrl = TextEditingController(text: '');
 
-  // Результат
   double? _bmiValue;
   String _bmiCategory = '';
   String _bmiAdvice = '';
   bool _showResult = false;
 
-  // Анимация цветной карточки
+  double? _normalWeightMin;
+  double? _normalWeightMax;
+
   late AnimationController _ctrl;
   late Animation<double> _fadeAnim;
   late Animation<Color?> _colorAnim;
 
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800));
     _fadeAnim = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
     _colorAnim = ColorTween(
       begin: Colors.white70,
@@ -70,25 +64,22 @@ class _BmiAdvancedCalculatorScreenState
     _weightCtrl.dispose();
     _heightCtrl.dispose();
     _ageCtrl.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  // Границы для веса/роста в слайдерах
   double get _minWeight => (_selectedUnit == UnitSystem.metric) ? 30 : 66;
   double get _maxWeight => (_selectedUnit == UnitSystem.metric) ? 200 : 440;
   double get _minHeight => (_selectedUnit == UnitSystem.metric) ? 100 : 39;
   double get _maxHeight => (_selectedUnit == UnitSystem.metric) ? 250 : 98;
 
-  /// Расчёт ИМТ
+  /// Расчёт ИМТ и нормального веса
   void _calculateBMI() {
-    // Если поле ввода пустое — fallback = slider
     double? w = double.tryParse(_weightCtrl.text);
     double? h = double.tryParse(_heightCtrl.text);
-
     w ??= _weightSlider;
     h ??= _heightSlider;
 
-    // Перевод в кг/см
     double weightKg;
     double heightCm;
     if (_selectedUnit == UnitSystem.metric) {
@@ -110,26 +101,29 @@ class _BmiAdvancedCalculatorScreenState
 
     String category;
     String advice;
-    Color colorBegin = Colors.white70;
-    Color colorEnd   = Colors.white70;
+    Color colorEnd = Colors.white70;
 
     if (bmi < 18.5) {
       category = 'Недостаточная масса';
-      advice   = 'Добавьте калорий, сбалансируйте рацион.';
+      advice = 'Добавьте калорий, сбалансируйте рацион.';
       colorEnd = Colors.blueAccent.withOpacity(0.8);
     } else if (bmi < 25) {
       category = 'Норма';
-      advice   = 'Отлично, поддерживайте здоровый образ жизни!';
+      advice = 'Отлично, поддерживайте здоровый образ жизни!';
       colorEnd = Colors.greenAccent.withOpacity(0.8);
     } else if (bmi < 30) {
       category = 'Избыточная масса';
-      advice   = 'Увеличьте активность, пересмотрите питание.';
+      advice = 'Увеличьте активность, пересмотрите питание.';
       colorEnd = Colors.orangeAccent.withOpacity(0.8);
     } else {
       category = 'Ожирение';
-      advice   = 'Желательна консультация специалиста.';
+      advice = 'Желательна консультация специалиста.';
       colorEnd = Colors.redAccent.withOpacity(0.8);
     }
+
+    final double heightM = heightCm / 100;
+    _normalWeightMin = 18.5 * pow(heightM, 2);
+    _normalWeightMax = 24.9 * pow(heightM, 2);
 
     setState(() {
       _bmiValue = bmi;
@@ -138,47 +132,42 @@ class _BmiAdvancedCalculatorScreenState
       _showResult = true;
     });
 
-    _colorAnim = ColorTween(
-      begin: colorBegin,
-      end: colorEnd,
-    ).animate(_fadeAnim);
-
+    _colorAnim = ColorTween(begin: Colors.white70, end: colorEnd).animate(_fadeAnim);
     _ctrl.forward(from: 0.0);
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
   }
 
-  double get _bmiClamped => _bmiValue == null
-      ? 0
-      : (_bmiValue! > 40 ? 40 : _bmiValue!);
+  double get _bmiClamped => _bmiValue == null ? 0 : (_bmiValue! > 40 ? 40 : _bmiValue!);
 
-  @override
-  Widget build(BuildContext context) {
+  /// Вместо build() используем composeScreen(), чтобы не было конфликта имени
+  Widget composeScreen(BuildContext context) {
     return Scaffold(
-      // Добавляем AppBar с кнопкой возврата
       appBar: AppBar(
         backgroundColor: kMintDark,
         title: const Text('Продвинутый ИМТ калькулятор'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            // Вернуться на предыдущий экран (или на главный, если это логика)
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              kMintDark,
-              kBackground,
-            ],
+            colors: [kMintDark, kBackground],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
         child: SafeArea(
-          // Чтобы AppBar не перекрывал контент, обрежем сверху
           child: SingleChildScrollView(
+            controller: _scrollController,
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
@@ -189,21 +178,13 @@ class _BmiAdvancedCalculatorScreenState
                 const SizedBox(height: 12),
                 _buildUnitSystemPicker(),
                 const SizedBox(height: 20),
-
-                // Вес
                 _buildWeightControls(),
                 const SizedBox(height: 20),
-
-                // Рост
                 _buildHeightControls(),
                 const SizedBox(height: 30),
-
-                // Кнопка "Рассчитать"
                 _buildCalcButton(),
                 const SizedBox(height: 30),
-
                 if (_showResult && _bmiValue != null) ...[
-                  // --- Отображение результата ---
                   _buildResultCircle(),
                   const SizedBox(height: 20),
                   AnimatedBuilder(
@@ -246,6 +227,18 @@ class _BmiAdvancedCalculatorScreenState
                                 color: Colors.black54,
                               ),
                             ),
+                            const SizedBox(height: 8),
+                            if (_selectedUnit == UnitSystem.metric &&
+                                _normalWeightMin != null &&
+                                _normalWeightMax != null)
+                              Text(
+                                'Нормальный вес: ${_normalWeightMin!.toStringAsFixed(1)} - ${_normalWeightMax!.toStringAsFixed(1)} кг',
+                                style: GoogleFonts.roboto(
+                                  fontSize: 16,
+                                  color: Colors.black87,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                           ],
                         ),
                       );
@@ -260,7 +253,15 @@ class _BmiAdvancedCalculatorScreenState
     );
   }
 
-  /// Выбор пола
+  /// Вместо build() – мы переопределяем build, но вызываем composeScreen
+  @override
+  Widget build(BuildContext context) {
+    // Тут вызываем composeScreen, чтобы не было конфликта имени build
+    return composeScreen(context);
+  }
+
+  /// Ниже – все остальные виджеты без изменений
+
   Widget _buildSexPicker() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -282,7 +283,6 @@ class _BmiAdvancedCalculatorScreenState
     );
   }
 
-  /// Ввод возраста (сделать ввод чёрным)
   Widget _buildAgeInput() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
@@ -292,7 +292,7 @@ class _BmiAdvancedCalculatorScreenState
       ),
       child: TextField(
         controller: _ageCtrl,
-        style: const TextStyle(color: Colors.black, fontSize: 16), // <-- черный текст
+        style: const TextStyle(color: Colors.black, fontSize: 16),
         keyboardType: TextInputType.number,
         decoration: const InputDecoration(
           border: InputBorder.none,
@@ -303,7 +303,6 @@ class _BmiAdvancedCalculatorScreenState
     );
   }
 
-  /// Переключатель метрической / имперской системы
   Widget _buildUnitSystemPicker() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -332,11 +331,11 @@ class _BmiAdvancedCalculatorScreenState
     );
   }
 
-  /// Вес
   Widget _buildWeightControls() {
     final double minW = _minWeight;
     final double maxW = _maxWeight;
-    final String label = (_selectedUnit == UnitSystem.metric) ? 'Вес (кг)' : 'Вес (фунты)';
+    final String label =
+    (_selectedUnit == UnitSystem.metric) ? 'Вес (кг)' : 'Вес (фунты)';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -398,11 +397,11 @@ class _BmiAdvancedCalculatorScreenState
     );
   }
 
-  /// Рост
   Widget _buildHeightControls() {
     final double minH = _minHeight;
     final double maxH = _maxHeight;
-    final String label = (_selectedUnit == UnitSystem.metric) ? 'Рост (см)' : 'Рост (дюймы)';
+    final String label =
+    (_selectedUnit == UnitSystem.metric) ? 'Рост (см)' : 'Рост (дюймы)';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -464,7 +463,6 @@ class _BmiAdvancedCalculatorScreenState
     );
   }
 
-  /// Кнопка "Рассчитать"
   Widget _buildCalcButton() {
     return InkWell(
       onTap: _calculateBMI,
@@ -489,19 +487,14 @@ class _BmiAdvancedCalculatorScreenState
     );
   }
 
-  /// Рисуем кольцо без стрелки (частично залитое)
   Widget _buildResultCircle() {
     final double clampBmi = (_bmiValue! > 40) ? 40 : _bmiValue!;
     return CustomPaint(
       size: const Size(220, 220),
-      painter: _CircleResultPainter(
-        value: clampBmi, // 0..40
-        maxValue: 40,
-      ),
+      painter: _CircleResultPainter(value: clampBmi, maxValue: 40),
       child: SizedBox(
         width: 220,
         height: 220,
-        // Текст ИМТ в центре
         child: Center(
           child: Text(
             '${_bmiValue!.toStringAsFixed(1)}',
@@ -517,10 +510,10 @@ class _BmiAdvancedCalculatorScreenState
   }
 }
 
-/// Painter для кольца (без стрелки)
+/// Painter для кольца результата
 class _CircleResultPainter extends CustomPainter {
-  final double value;    // 0..40
-  final double maxValue; // 40
+  final double value;
+  final double maxValue;
 
   _CircleResultPainter({required this.value, required this.maxValue});
 
@@ -529,31 +522,22 @@ class _CircleResultPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 10;
 
-    // Фон (серое кольцо)
+    // Фон
     final paintBg = Paint()
       ..color = Colors.white24
       ..style = PaintingStyle.stroke
       ..strokeWidth = 16;
-
     canvas.drawCircle(center, radius, paintBg);
 
-    // Доля (value / maxValue) => угол 2*pi*(value/maxValue)
     final double angle = 2 * pi * (value / maxValue);
-
     final paintArc = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 16
       ..strokeCap = StrokeCap.round
-    // Градиентная заливка
       ..shader = const LinearGradient(
-        colors: [
-          Colors.pinkAccent,
-          Colors.orangeAccent,
-          Colors.yellowAccent,
-        ],
+        colors: [Colors.pinkAccent, Colors.orangeAccent, Colors.yellowAccent],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
 
-    // Рисуем дугу
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       -pi / 2,
