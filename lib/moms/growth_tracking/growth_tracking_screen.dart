@@ -169,7 +169,8 @@ class _GrowthTrackingScreenState extends State<GrowthTrackingScreen> {
                 const SizedBox(height: 16),
                 Text(
                   'Укажите дату рождения ребёнка',
-                  style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold),
+                  style:
+                  GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 Expanded(
                   child: Localizations.override(
@@ -422,54 +423,24 @@ class _GrowthTrackingScreenState extends State<GrowthTrackingScreen> {
     );
   }
 
-  /// Диалог "Подробнее..."
+  /// Диалог "Подробнее..." (обновлённая версия с описанием "с X по Y месяц")
   void _showDetailDialog() {
     final isHeight = (selectedMetric == MetricType.height);
     final title = isHeight ? 'Подробнее про рост' : 'Подробнее про вес';
+
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
           title: Text(title),
           content: SizedBox(
+            // Задаём ограничение по высоте для нормального скролла
             height: MediaQuery.of(ctx).size.height * 0.6,
-            width: MediaQuery.of(ctx).size.width * 0.8,
+            width: MediaQuery.of(ctx).size.width * 0.9,
+            // Одинарный ScrollView без вложенностей
             child: SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: [
-                    DataColumn(
-                      label: Text(
-                        '№',
-                        style: GoogleFonts.roboto(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                    DataColumn(
-                      label: Text(
-                        'Месяц',
-                        style: GoogleFonts.roboto(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                    DataColumn(
-                      label: Text(
-                        isHeight ? 'Рост (p50)' : 'Вес (p50)',
-                        style: GoogleFonts.roboto(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ],
-                  rows: _buildDetailRows36(),
-                ),
+              child: Column(
+                children: _buildDetailWidgets(isHeight),
               ),
             ),
           ),
@@ -484,34 +455,64 @@ class _GrowthTrackingScreenState extends State<GrowthTrackingScreen> {
     );
   }
 
-  /// Таблица 1..36
-  List<DataRow> _buildDetailRows36() {
-    final isHeight = (selectedMetric == MetricType.height);
-    final dataList = isHeight ? whoHeightData36 : whoWeightData36;
-    final rows = <DataRow>[];
-    for (int m = 1; m <= 36; m++) {
-      final found = dataList.where((d) => d.month.round() == m).toList();
-      String p50Str = '—';
-      if (found.isNotEmpty) {
-        p50Str = found.first.p50.toStringAsFixed(1);
-      }
-      rows.add(
-        DataRow(cells: [
-          DataCell(Text('$m')),
-          DataCell(Text('$m мес')),
-          DataCell(Text(p50Str)),
-        ]),
+  /// Генерация списка текстовых виджетов по периодам из whoData
+  List<Widget> _buildDetailWidgets(bool isHeight) {
+    final data = isHeight ? whoHeightData36 : whoWeightData36;
+    final units = isHeight ? 'см' : 'кг';
+    final items = <Widget>[];
+
+    // Пробегаемся по всем записям (p3..p97) и делаем красивый текст:
+    // "В период с X по Y месяц: примерно от p3..p97, (p50 ~ ...)"
+    // Или, если хотим упрощённо, можно выводить только p50. Но ниже пример с диапазоном:
+    for (int i = 0; i < data.length - 1; i++) {
+      final fromM = data[i].month.toInt();
+      final toM = data[i + 1].month.toInt();
+
+      final fromP3 = data[i].p3.toStringAsFixed(1);
+      final toP97 = data[i + 1].p97.toStringAsFixed(1);
+      final p50Avg = data[i].p50.toStringAsFixed(1);
+
+      final textLine =
+          'В период с $fromM по $toM мес: от $fromP3 до $toP97 $units (среднее ~$p50Avg $units).';
+      items.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Text(
+            textLine,
+            style: GoogleFonts.roboto(fontSize: 14),
+          ),
+        ),
       );
     }
-    return rows;
+
+    // Дополнительно можем вывести последнюю точку (36 мес), если нужно:
+    // (Например, "После 36 мес примерно: ...")
+    final last = data.last;
+    if (last.month < 36) {
+      // логика, если хотим добить до 36
+    } else if (last.month == 36) {
+      final p3 = last.p3.toStringAsFixed(1);
+      final p97 = last.p97.toStringAsFixed(1);
+      final p50 = last.p50.toStringAsFixed(1);
+      items.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: Text(
+            'В период около 36 мес: от $p3 до $p97 $units (среднее ~$p50 $units).',
+            style: GoogleFonts.roboto(fontSize: 14),
+          ),
+        ),
+      );
+    }
+
+    return items;
   }
 
   /// Данные ВОЗ
   List<WhoDataFull> get whoData =>
       (selectedMetric == MetricType.height) ? whoHeightData36 : whoWeightData36;
 
-  List<FlSpot> get p3Spots =>
-      whoData.map((d) => FlSpot(d.month, d.p3)).toList();
+  List<FlSpot> get p3Spots => whoData.map((d) => FlSpot(d.month, d.p3)).toList();
   List<FlSpot> get p15Spots =>
       whoData.map((d) => FlSpot(d.month, d.p15)).toList();
   List<FlSpot> get p50Spots =>
@@ -561,9 +562,8 @@ class _GrowthTrackingScreenState extends State<GrowthTrackingScreen> {
               tooltipRoundedRadius: 10,
               getTooltipItems: (touchedSpots) {
                 // пользовательская линия = barIndex=5
-                final userSpots = touchedSpots
-                    .where((s) => s.barIndex == 5)
-                    .toList();
+                final userSpots =
+                touchedSpots.where((s) => s.barIndex == 5).toList();
                 if (userSpots.isEmpty) return [];
                 return userSpots.map((barSpot) {
                   final xVal = barSpot.x;
@@ -580,7 +580,8 @@ class _GrowthTrackingScreenState extends State<GrowthTrackingScreen> {
             leftTitles: AxisTitles(
               axisNameWidget: Text(
                 isHeight ? 'Рост (см)' : 'Вес (кг)',
-                style: GoogleFonts.roboto(fontSize: 12, fontWeight: FontWeight.bold),
+                style:
+                GoogleFonts.roboto(fontSize: 12, fontWeight: FontWeight.bold),
               ),
               axisNameSize: 16,
               sideTitles: SideTitles(
@@ -771,7 +772,8 @@ class _GrowthTrackingScreenState extends State<GrowthTrackingScreen> {
                 (selectedMetric == MetricType.height)
                     ? 'Подробнее про рост'
                     : 'Подробнее про вес',
-                style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold),
+                style:
+                GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 8),
@@ -790,7 +792,8 @@ class _GrowthTrackingScreenState extends State<GrowthTrackingScreen> {
                 (selectedMetric == MetricType.height)
                     ? 'Добавить новое значение роста'
                     : 'Добавить новое значение веса',
-                style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold),
+                style:
+                GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -889,15 +892,15 @@ class _GrowthTrackingScreenState extends State<GrowthTrackingScreen> {
                 Expanded(
                   child: Text(
                     (selectedMetric == MetricType.height) ? 'Рост' : 'Вес',
-                    style: GoogleFonts.roboto(
-                        fontWeight: FontWeight.bold, fontSize: 16),
+                    style:
+                    GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
                 Expanded(
                   child: Text(
                     'Дата',
-                    style: GoogleFonts.roboto(
-                        fontWeight: FontWeight.bold, fontSize: 16),
+                    style:
+                    GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
                 ),
                 const SizedBox(width: 60),
@@ -1151,7 +1154,6 @@ class _GrowthTrackingScreenState extends State<GrowthTrackingScreen> {
         ),
         centerTitle: true,
         backgroundColor: kMintDark,
-        // === ДОБАВЛЯЕМ КНОПКУ ДЛЯ ИЗМЕНЕНИЯ ДАТЫ РОЖДЕНИЯ ===
         actions: [
           IconButton(
             icon: const Icon(Icons.calendar_today_outlined),
