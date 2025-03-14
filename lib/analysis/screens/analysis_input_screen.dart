@@ -62,24 +62,43 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
     super.dispose();
   }
 
-  /// Определяем цвет фона (зелёный/красный/белый) в зависимости от норм
+  /// Определяем цвет фона (зелёный/красный/белый) в зависимости от норм.
+  /// Для показателей с выбором (options) возвращаем подсвеченный фон.
   Color _getBackgroundColor(Map<String, dynamic> indicator) {
+    if (indicator.containsKey('options')) {
+      final ctrl = _controllers[indicator['id']];
+      if (ctrl == null || ctrl.text.trim().isEmpty) return Colors.white;
+      final selected = ctrl.text.trim();
+      // Для "Цвет мочи"
+      if (indicator['id'] == 'color') {
+        if (selected == 'Жёлтый' || selected == 'Светло-жёлтый') {
+          return Colors.green.shade50;
+        } else {
+          return Colors.red.shade50;
+        }
+      }
+      // Для "Прозрачность (мутность)"
+      if (indicator['id'] == 'clarity') {
+        if (selected == 'Прозрачная' || selected == 'Слегка мутная') {
+          return Colors.green.shade50;
+        } else {
+          return Colors.red.shade50;
+        }
+      }
+      return Colors.white;
+    }
     final ctrl = _controllers[indicator['id']];
     if (ctrl == null) return Colors.white;
-
     final textVal = ctrl.text.trim();
     if (textVal.isEmpty) return Colors.white;
-
     final val = double.tryParse(textVal);
     if (val == null) return Colors.white;
-
     final status = widget.analysisService.checkValue(
       indicator: indicator,
       value: val,
-      sex: widget.patientSex,   // "male"/"female"
+      sex: widget.patientSex, // "male"/"female"
       age: widget.patientAge,
     );
-
     if (status.contains('В норме')) {
       return Colors.green.shade50;
     } else if (status.contains('Выше') || status.contains('Ниже')) {
@@ -115,7 +134,6 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
       final name = ind['name'];
       final txt = _controllers[id]?.text.trim() ?? '';
       final val = double.tryParse(txt);
-
       if (val == null) {
         results.add({
           'id': id,
@@ -256,7 +274,27 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          TextField(
+          // Если у показателя есть список вариантов, показываем dropdown, иначе – TextField
+          indicator.containsKey('options')
+              ? DropdownButtonFormField<String>(
+            value: ctrl.text.isNotEmpty ? ctrl.text : null,
+            items: (indicator['options'] as List)
+                .map<DropdownMenuItem<String>>((option) {
+              return DropdownMenuItem<String>(
+                value: option,
+                child: Text(option),
+              );
+            }).toList(),
+            onChanged: (value) {
+              ctrl.text = value ?? '';
+              setState(() {}); // Обновляем фон при выборе
+            },
+            decoration: const InputDecoration(
+              labelText: 'Выберите значение',
+              border: OutlineInputBorder(),
+            ),
+          )
+              : TextField(
             controller: ctrl,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
@@ -264,11 +302,12 @@ class _AnalysisInputScreenState extends State<AnalysisInputScreen> {
               border: OutlineInputBorder(),
             ),
             onChanged: (_) {
-              setState(() {}); // Обновим фон, если значение вышло/вошло в норму
+              setState(() {}); // Обновляем фон при изменении значения
             },
           ),
           const SizedBox(height: 4),
-          if (norm != null)
+          // Если для показателя определён нормальный диапазон и он не является выбором (options)
+          if (norm != null && !indicator.containsKey('options'))
             Text('Норма: ${norm[0]} - ${norm[1]}'),
         ],
       ),

@@ -136,7 +136,7 @@ class _AnalysisHistoryDetailScreenState
     final dateFormatted = _formatDate(rawDate);
 
     final pName = widget.item['patientName'] ?? '';
-    final pAge = widget.item['patientAge'] ?? 0;   // int
+    final pAge = widget.item['patientAge'] ?? 0; // int
     final pSexRaw = widget.item['patientSex'] ?? '';
     final pSex = _translateSex(pSexRaw);
 
@@ -216,7 +216,6 @@ class _AnalysisHistoryDetailScreenState
               ),
             ),
             const SizedBox(height: 16),
-
             // Если нет показателей или results пустые => выводим ошибку
             if (parsedResults.isEmpty ||
                 rawResults.toString().trim().isEmpty)
@@ -262,7 +261,7 @@ class _AnalysisHistoryDetailScreenState
   }
 
   /// Построение карточки для одного показателя:
-  /// определяем "выше/ниже нормы" и выводим причины/рекомендации.
+  /// определяем "выше/ниже нормы" или работаем с "options" (качественный показатель).
   Widget _buildResultCard(
       Map<String, dynamic> resItem,
       String researchId,
@@ -310,7 +309,10 @@ class _AnalysisHistoryDetailScreenState
       );
     }
 
-    // Получаем диапазон норм
+    // Проверяем, есть ли у индикатора "options" (качественный показатель)
+    final bool hasOptions = indicator.containsKey('options');
+
+    // Получаем диапазон норм (для количественных показателей)
     final normalRange = indicator['normalRange'] as Map<String, dynamic>?;
     final range = _findRangeForPatient(normalRange, patientSex, patientAge);
     final double minVal = range[0];
@@ -321,41 +323,69 @@ class _AnalysisHistoryDetailScreenState
     String cause = '';
     String recommendation = '';
 
-    if (value != null) {
-      if (value < minVal) {
-        computedStatus = 'Ниже нормы';
-        cause = indicator['causesLower'] ?? '';
-        recommendation = indicator['recommendationLower'] ?? '';
-      } else if (value > maxVal) {
+    if (hasOptions) {
+      // --- ЛОГИКА ДЛЯ КАЧЕСТВЕННЫХ ПОКАЗАТЕЛЕЙ (цвет, прозрачность и т.п.) ---
+      final selectedOption = rawValue.toString();
+
+      // Пример упрощённой логики:
+      if (selectedOption == 'Жёлтый' || selectedOption == 'Светло-жёлтый' ||
+          selectedOption == 'Прозрачная' || selectedOption == 'Слегка мутная') {
+        computedStatus = 'В норме';
+      } else if (selectedOption == 'Тёмно-жёлтый' ||
+          selectedOption == 'Оранжевый' ||
+          selectedOption == 'Красный/Розовый' ||
+          selectedOption == 'Мутная') {
         computedStatus = 'Выше нормы';
         cause = indicator['causesHigher'] ?? '';
         recommendation = indicator['recommendationHigher'] ?? '';
+      } else {
+        // Если вариант "слишком светлый" или иное
+        computedStatus = 'Ниже нормы';
+        cause = indicator['causesLower'] ?? '';
+        recommendation = indicator['recommendationLower'] ?? '';
+      }
+    } else {
+      // --- ЛОГИКА ДЛЯ КОЛИЧЕСТВЕННЫХ ПОКАЗАТЕЛЕЙ ---
+      if (value != null) {
+        if (value < minVal) {
+          computedStatus = 'Ниже нормы';
+          cause = indicator['causesLower'] ?? '';
+          recommendation = indicator['recommendationLower'] ?? '';
+        } else if (value > maxVal) {
+          computedStatus = 'Выше нормы';
+          cause = indicator['causesHigher'] ?? '';
+          recommendation = indicator['recommendationHigher'] ?? '';
+        }
       }
     }
 
     return Card(
       child: ListTile(
         title: Text(
-          '$name: ${value ?? rawValue}',
+          '$name: ${rawValue ?? ''}',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text('Статус: $computedStatus'),
-            Text('Норма: $minVal – $maxVal'),
+
+            // Только для количественных показателей показываем "Норма"
+            if (!hasOptions)
+              Text('Норма: $minVal – $maxVal'),
+
             if (cause.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
                 'Причины: $cause',
-                style: const TextStyle(color: Colors.redAccent),
+                style: TextStyle(color: Colors.orange.shade700),
               ),
             ],
             if (recommendation.isNotEmpty) ...[
               const SizedBox(height: 4),
               Text(
                 'Рекомендации: $recommendation',
-                style: const TextStyle(color: Colors.blue),
+                style: TextStyle(color: Colors.teal.shade600),
               ),
             ],
           ],
@@ -365,6 +395,7 @@ class _AnalysisHistoryDetailScreenState
   }
 
   /// Функция, которая из normalRange достаёт [min, max] с учётом пола/возраста.
+  /// Если ничего не найдено — возвращаем [0, 999999].
   List<double> _findRangeForPatient(
       Map<String, dynamic>? normalRange,
       String sex,

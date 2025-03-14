@@ -88,7 +88,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // --- Информация о пациенте (панель с белым фоном, скруглёнными углами и тенью) ---
+          // --- Информация о пациенте ---
           Container(
             alignment: Alignment.center,
             padding: const EdgeInsets.all(16),
@@ -155,7 +155,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
     );
   }
 
-  /// Строит виджет для одного показателя
+  /// Строит виджет для одного показателя (качественный или количественный)
   Widget _buildResultItem(
       Map<String, dynamic> res,
       Map<String, dynamic>? research,
@@ -187,30 +187,74 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
       );
     }
 
-    // Получаем нормальные границы
-    final normalRange = indicator['normalRange'] as Map<String, dynamic>?;
-    final range = _findRangeForPatient(
-      normalRange,
-      widget.patientSex,
-      widget.patientAge,
-    );
-    final double minVal = range[0];
-    final double maxVal = range[1];
+    // Проверяем, есть ли у индикатора поле "options" (качественный показатель)
+    final bool hasOptions = indicator.containsKey('options');
 
-    // Определяем статус, причины, рекомендации
+    // Начальные значения
     String computedStatus = 'В норме';
     String cause = '';
     String recommendation = '';
+    double minVal = 0.0;
+    double maxVal = 0.0;
 
-    if (value != null) {
-      if (value < minVal) {
-        computedStatus = 'Ниже нормы';
-        cause = indicator['causesLower'] ?? '';
-        recommendation = indicator['recommendationLower'] ?? '';
-      } else if (value > maxVal) {
+    if (hasOptions) {
+      // --- ЛОГИКА ДЛЯ КАЧЕСТВЕННЫХ ПОКАЗАТЕЛЕЙ (например, цвет, прозрачность) ---
+      final selectedOption = rawValue.toString();
+
+      // Для упрощения: если пользователь выбрал "Жёлтый" или "Прозрачная" —
+      // считаем, что всё нормально. Если выбрал "Тёмно-жёлтый", "Оранжевый",
+      // "Красный/Розовый" или "Мутная" — "Выше нормы". И т.д.
+      // В реальном приложении логику можно расширить.
+
+      // Пример для "color" (цвет мочи):
+      if (selectedOption == 'Жёлтый' || selectedOption == 'Светло-жёлтый') {
+        computedStatus = 'В норме';
+        // cause / recommendation остаются пустыми
+      } else if (selectedOption == 'Тёмно-жёлтый' ||
+          selectedOption == 'Оранжевый' ||
+          selectedOption == 'Красный/Розовый') {
         computedStatus = 'Выше нормы';
         cause = indicator['causesHigher'] ?? '';
         recommendation = indicator['recommendationHigher'] ?? '';
+      } else {
+        // Возможно, вариант "Слишком светлый" или нечто иное
+        computedStatus = 'Ниже нормы';
+        cause = indicator['causesLower'] ?? '';
+        recommendation = indicator['recommendationLower'] ?? '';
+      }
+
+      // Пример для "clarity" (прозрачность):
+      // if (selectedOption == 'Прозрачная' || selectedOption == 'Слегка мутная') {
+      //   computedStatus = 'В норме';
+      // } else if (selectedOption == 'Мутная') {
+      //   computedStatus = 'Выше нормы';
+      //   cause = indicator['causesHigher'] ?? '';
+      //   recommendation = indicator['recommendationHigher'] ?? '';
+      // } ...
+
+    } else {
+      // --- ЛОГИКА ДЛЯ КОЛИЧЕСТВЕННЫХ ПОКАЗАТЕЛЕЙ (pH, белок, глюкоза и т.д.) ---
+
+      // Получаем нормальные границы
+      final normalRange = indicator['normalRange'] as Map<String, dynamic>?;
+      final range = _findRangeForPatient(
+        normalRange,
+        widget.patientSex,
+        widget.patientAge,
+      );
+      minVal = range[0];
+      maxVal = range[1];
+
+      if (value != null) {
+        if (value < minVal) {
+          computedStatus = 'Ниже нормы';
+          cause = indicator['causesLower'] ?? '';
+          recommendation = indicator['recommendationLower'] ?? '';
+        } else if (value > maxVal) {
+          computedStatus = 'Выше нормы';
+          cause = indicator['causesHigher'] ?? '';
+          recommendation = indicator['recommendationHigher'] ?? '';
+        }
       }
     }
 
@@ -225,24 +269,28 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '$name: ${value ?? rawValue}',
+            '$name: $rawValue',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
           Text('Статус: $computedStatus'),
-          Text('Норма: $minVal – $maxVal'),
+
+          // Показываем нормальный диапазон ТОЛЬКО для количественных показателей
+          if (!hasOptions)
+            Text('Норма: $minVal – $maxVal'),
+
           if (cause.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
               'Причины: $cause',
-              style: const TextStyle(color: Colors.redAccent),
+              style: TextStyle(color: Colors.orange.shade700),
             ),
           ],
           if (recommendation.isNotEmpty) ...[
             const SizedBox(height: 6),
             Text(
               'Рекомендации: $recommendation',
-              style: const TextStyle(color: Colors.blue),
+              style: TextStyle(color: Colors.teal.shade600),
             ),
           ],
         ],
