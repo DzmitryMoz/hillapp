@@ -342,7 +342,7 @@ class __HomePageState extends State<_HomePage> {
             onTap: _goAnalysisDecryption,
           ),
           const SizedBox(height: 12),
-          // 7. Кнопка "Калькулятор лекарств"
+          // 7. Кнопка "Калькулятор ИМТ"
           _buildGradientCardButton(
             title: 'Калькулятор ИМТ',
             description: 'Быстрый расчёт индекса массы тела для оценки состояния вашего здоровья.',
@@ -355,7 +355,7 @@ class __HomePageState extends State<_HomePage> {
     );
   }
 
-  /// Карточка с последним показателем АД/ЧСС с балльной классификацией для любых данных
+  /// Карточка с последним показателем АД/ЧСС
   Widget _buildLastMeasurementCard(dynamic measurement) {
     final dateString = _formatDate(measurement.date);
     final systolic = measurement.systolic;
@@ -439,7 +439,7 @@ class __HomePageState extends State<_HomePage> {
     }
 
     // -------------------- Классификация для ЧСС --------------------
-    String hrStatus = ' (Нормальный)';
+    String hrStatus = ' (Нормальное)';
     Color hrColor = Colors.green;
     if (heartRate < 60) {
       hrStatus = ' (Брадикардия)';
@@ -693,11 +693,13 @@ class __HomePageState extends State<_HomePage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding:
+        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
           backgroundColor: kMintDark,
           radius: 14,
-          child: const Icon(Icons.medical_services, color: Colors.white, size: 18),
+          child: const Icon(Icons.medical_services,
+              color: Colors.white, size: 18),
         ),
         title: Text(
           name,
@@ -706,8 +708,47 @@ class __HomePageState extends State<_HomePage> {
         subtitle: Text(
           'Дозировка: $dosage $unit\nВремя: $timeText, Приём: $intakeTypeLabel',
         ),
+        // Креативная кнопка "Принял", оформленная в стиле общего дизайна
+        trailing: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: const LinearGradient(
+              colors: [kMintLight, kMintDark],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: kMintDark.withOpacity(0.5),
+                offset: const Offset(0, 4),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          child: TextButton.icon(
+            onPressed: () => _onMedicationTaken(intake),
+            icon: const Icon(Icons.check, color: Colors.white, size: 16),
+            label: const Text(
+              'Принял',
+              style: TextStyle(color: Colors.white, fontSize: 12),
+            ),
+            style: TextButton.styleFrom(
+              padding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              backgroundColor: Colors.transparent,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ),
       ),
     );
+  }
+
+  // Метод, который удаляет препарат из списка сегодняшних, не затрагивая календарь
+  void _onMedicationTaken(CalendarMedicationIntake intake) {
+    setState(() {
+      _todayMedications.remove(intake);
+    });
   }
 
   // Карточка-кнопка (универсальная)

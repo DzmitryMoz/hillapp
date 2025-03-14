@@ -19,7 +19,8 @@ class NotificationService {
     const AndroidInitializationSettings androidSettings =
     AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const DarwinInitializationSettings iOSSettings = DarwinInitializationSettings();
+    const DarwinInitializationSettings iOSSettings =
+    DarwinInitializationSettings();
 
     const InitializationSettings initSettings = InitializationSettings(
       android: androidSettings,
@@ -36,7 +37,7 @@ class NotificationService {
 
   /// Метод для установки/перенастройки уведомления.
   /// Если уведомление с таким [id] уже существовало, оно отменяется и создаётся заново.
-  /// Если [scheduledDate] уже прошла, можно либо не ставить уведомление, либо сдвинуть на будущее.
+  /// Если [scheduledDate] уже прошла, уведомление не ставится.
   Future<void> scheduleNotification({
     required int id,
     required String title,
@@ -46,31 +47,25 @@ class NotificationService {
     // (1) Отменяем старое уведомление с таким же id
     await flutterLocalNotificationsPlugin.cancel(id);
 
-    // (2) Если scheduledDate уже в прошлом — решаем, что делать.
-    // Допустим, просто не ставим уведомление (или можно сдвинуть на следующий день).
+    // (2) Проверяем, что scheduledDate не в прошлом
     final now = DateTime.now();
     if (scheduledDate.isBefore(now)) {
-      // Если нужно сдвинуть на будущее — раскомментируйте:
-      // scheduledDate = scheduledDate.add(const Duration(days: 1));
-
-      // Или вообще не ставим уведомление:
       print(
           'NotificationService.scheduleNotification: время уже прошло ($scheduledDate), уведомление не установлено.');
       return;
     }
 
-    // Преобразование DateTime в tz.TZDateTime с учётом локальной временной зоны
+    // Преобразование DateTime в tz.TZDateTime с учетом локальной временной зоны
     final tz.TZDateTime tzScheduledDate =
     tz.TZDateTime.from(scheduledDate, tz.local);
 
-    // Настраиваем стиль уведомления (пример с BigPictureStyleInformation)
-    final BigPictureStyleInformation bigPictureStyleInformation =
-    BigPictureStyleInformation(
-      const DrawableResourceAndroidBitmap('@mipmap/pill_icon'),
+    // Используем BigTextStyleInformation для компактного отображения уведомления
+    final BigTextStyleInformation bigTextStyleInformation =
+    BigTextStyleInformation(
+      body,
       contentTitle: '<b>$title</b>',
-      summaryText: body,
       htmlFormatContentTitle: true,
-      htmlFormatSummaryText: true,
+      htmlFormatBigText: true,
     );
 
     final AndroidNotificationDetails androidPlatformChannelSpecifics =
@@ -81,7 +76,9 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
       color: const Color(0xFF00B4AB),
-      styleInformation: bigPictureStyleInformation,
+      styleInformation: bigTextStyleInformation,
+      // Дополнительная настройка: можно убрать отображение времени уведомления
+      showWhen: false,
     );
 
     final DarwinNotificationDetails iosPlatformChannelSpecifics =
