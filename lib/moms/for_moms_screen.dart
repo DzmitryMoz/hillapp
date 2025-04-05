@@ -44,7 +44,7 @@ class ForMomsScreen extends StatelessWidget {
       'desc': 'Отслеживайте показатели роста и веса ребенка.',
       'icon': Icons.show_chart,
       'gradientColors': [Color(0xFFFFF176), Color(0xFFFDD835)],
-      'screen': const GrowthTrackingScreen(),
+      'screen': GrowthTrackingScreen(),
     },
   ];
 

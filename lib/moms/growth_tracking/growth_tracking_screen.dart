@@ -1,71 +1,52 @@
-import 'dart:convert';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:intl/intl.dart';
-import 'package:fl_chart/fl_chart.dart';
 
-/// Пример AppColors – замените на свои реальные цвета, если необходимо
-class AppColors {
-  static const Color kMintDark = Color(0xFF00897B);
-  static const Color kBackground = Color(0xFFF0F4F5);
+void main() => runApp(const MyApp());
 
-  static const Color greenLine = Color(0xFF4CAF50); // официальные данные (норма, p50)
-  static const Color blueLine  = Color(0xFF2196F3); // данные пользователя
+/// Главный виджет приложения
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
 
-  // Добавляем цвета для отклонений:
-  static const Color redLine   = Color(0xFFFF5252);
-  static const Color orangeLine = Color(0xFFFFA000);
-}
-
-/// Тип метрики (Рост / Вес)
-enum MetricType { height, weight }
-
-/// Модель замера (value изменяем для редактирования)
-class UserMeasurement {
-  late final DateTime date;
-  double value;
-  MetricType type;
-
-  UserMeasurement({
-    required this.date,
-    required this.value,
-    required this.type,
-  });
-
-  Map<String, dynamic> toJson() => {
-    'date': date.toIso8601String(),
-    'value': value,
-    'type': type.index,
-  };
-
-  factory UserMeasurement.fromJson(Map<String, dynamic> json) {
-    return UserMeasurement(
-      date: DateTime.parse(json['date']),
-      value: (json['value'] as num).toDouble(),
-      type: MetricType.values[json['type']],
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Рост и вес ребенка',
+      theme: ThemeData(
+        primaryColor: AppColors.kMintDark,
+        scaffoldBackgroundColor: AppColors.kBackground,
+      ),
+      home: const GrowthTrackingScreen(),
     );
   }
 }
 
-/// Примерные официальные данные (1..36) — рост (см)
-final List<double> growthOfficialData = [
-  50, 52, 54, 56, 58, 60, 61, 63, 64, 66, 68, 70, 72, 74, 75, 77,
-  79, 80, 82, 84, 86, 88, 90, 92, 93, 94, 95, 96, 97, 98, 99, 100,
-  100, 100, 100, 100
-];
+/// Класс с цветовыми константами приложения
+class AppColors {
+  static const kMintLight = Color(0xFF00E5D1); // Светлый оттенок
+  static const kMintDark = Color(0xFF00B4AB); // Базовый цвет
+  static const kBackground = Color(0xFFE3FDFD);
+}
 
-/// Примерные официальные данные (1..36) — вес (кг)
-final List<double> weightOfficialData = [
-  3.2, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.3, 9.7, 10,
-  10.5, 11, 11.4, 12, 12.3, 13, 13.2, 14, 14.2, 14.5, 14.8, 15,
-  15, 15, 15, 15, 15, 15, 15, 15,
-  15
-];
+/// Тип показателя: Рост или Вес
+enum MeasurementType { height, weight }
 
-/// Основной экран
+/// Модель данных для одного возрастного промежутка
+class ChildGrowthData {
+  final String age;    // Например: "1 месяц", "2 месяца", "1 год", "2 года", …, "18 лет"
+  final double height; // Рост в сантиметрах
+  final double weight; // Вес в килограммах
+  final String description; // Этап развития (для режима "Рост")
+  final String nutritionRecommendations; // Рекомендации по питанию (для режима "Вес")
+
+  ChildGrowthData({
+    required this.age,
+    required this.height,
+    required this.weight,
+    required this.description,
+    required this.nutritionRecommendations,
+  });
+}
+
+/// Экран для отслеживания роста и веса ребенка
 class GrowthTrackingScreen extends StatefulWidget {
   const GrowthTrackingScreen({Key? key}) : super(key: key);
 
@@ -74,952 +55,410 @@ class GrowthTrackingScreen extends StatefulWidget {
 }
 
 class _GrowthTrackingScreenState extends State<GrowthTrackingScreen> {
-  DateTime? birthDate;
-  MetricType selectedMetric = MetricType.weight;
-  final List<UserMeasurement> measurements = [];
+  /// Текущее выбранное измерение: Рост или Вес
+  MeasurementType _selectedMeasurement = MeasurementType.height;
+
+  /// Список данных с возрастными промежутками (от 1 месяца до 18 лет)
+  final List<ChildGrowthData> childGrowthData = [
+    // Младенчество (месяцы)
+    ChildGrowthData(
+      age: '1 месяц',
+      height: 54.0,
+      weight: 4.5,
+      description:
+      'В 1 месяц ребенок начинает адаптироваться к окружающему миру, фиксирует взгляд на родителях, начинает различать звуки и образы.',
+      nutritionRecommendations:
+      'Рекомендуется исключительно грудное вскармливание или адаптированная смесь по рекомендации врача.',
+    ),
+    ChildGrowthData(
+      age: '2 месяца',
+      height: 57.0,
+      weight: 5.0,
+      description:
+      'Во 2 месяца развивается зрение и слух, появляется первая улыбка, ребенок реагирует на знакомые голоса.',
+      nutritionRecommendations:
+      'Продолжайте грудное вскармливание или смесь, следите за частотой кормлений – обычно 6–8 раз в сутки.',
+    ),
+    ChildGrowthData(
+      age: '3 месяца',
+      height: 58.0,
+      weight: 6.4,
+      description:
+      'В 3 месяца усиливается координация движений, ребенок начинает наблюдать за своими руками и лицом.',
+      nutritionRecommendations:
+      'Кормления должны быть регулярными; обращайте внимание на сигналы сытости ребенка.',
+    ),
+    ChildGrowthData(
+      age: '4 месяца',
+      height: 62.0,
+      weight: 7.0,
+      description:
+      'В 4 месяца ребенок активно улыбается, начинает переворачиваться, изучая окружающий мир.',
+      nutritionRecommendations:
+      'Грудное вскармливание или смесь остаются основным источником питания; можно обсудить начало прикорма с врачом.',
+    ),
+    ChildGrowthData(
+      age: '5 месяцев',
+      height: 64.0,
+      weight: 7.5,
+      description:
+      'В 5 месяцев развивается моторика: ребенок может хватать игрушки, проявляет интерес к ярким объектам.',
+      nutritionRecommendations:
+      'Питание грудным молоком/смесью, при необходимости – консультация педиатра по поводу введения прикорма.',
+    ),
+    ChildGrowthData(
+      age: '6 месяцев',
+      height: 65.0,
+      weight: 7.8,
+      description:
+      'В 6 месяцев ребенок начинает переворачиваться, сидеть с поддержкой и изучать игрушки, улучшая координацию движений.',
+      nutritionRecommendations:
+      'В этом возрасте можно начинать вводить прикорм: овощные и фруктовые пюре, каши – постепенно, согласно рекомендациям специалиста.',
+    ),
+    // Раннее детство и школьный возраст
+    ChildGrowthData(
+      age: '1 год',
+      height: 75.0,
+      weight: 9.5,
+      description:
+      'В 12 месяцев ребенок делает первые шаги, начинает активно исследовать окружающее пространство самостоятельно.',
+      nutritionRecommendations:
+      'Переход на смешанное питание: грудное молоко/смесь плюс небольшие порции твердой пищи, сбалансированной по белкам, жирам и углеводам.',
+    ),
+    ChildGrowthData(
+      age: '2 года',
+      height: 87.0,
+      weight: 12.0,
+      description:
+      'В 2 года ребенок начинает уверенно ходить, развивается речь, появляется интерес к самостоятельным действиям.',
+      nutritionRecommendations:
+      'Разнообразное питание с упором на овощи, фрукты, молочные продукты и умеренное количество белка; избегайте избыточного сахара.',
+    ),
+    ChildGrowthData(
+      age: '3 года',
+      height: 95.0,
+      weight: 14.0,
+      description:
+      'В 3 года расширяется словарный запас, ребенок начинает играть с другими детьми и проявлять самостоятельность.',
+      nutritionRecommendations:
+      'Сбалансированный рацион с малыми порциями и регулярными приемами пищи, уделяя внимание качеству продуктов.',
+    ),
+    ChildGrowthData(
+      age: '4 года',
+      height: 102.0,
+      weight: 16.0,
+      description:
+      'В 4 года ребенок начинает самостоятельно одеваться, развивает мелкую моторику и творческие способности.',
+      nutritionRecommendations:
+      'Поддерживайте разнообразие в рационе, включая свежие овощи, фрукты, цельнозерновые продукты и белковые источники.',
+    ),
+    ChildGrowthData(
+      age: '5 лет',
+      height: 108.0,
+      weight: 18.0,
+      description:
+      'В 5 лет ребенок готовится к школе, развивается логическое мышление, память и коммуникативные навыки.',
+      nutritionRecommendations:
+      'Важно обеспечить полноценный завтрак, регулярные приемы пищи и ограничить сладкие закуски.',
+    ),
+    ChildGrowthData(
+      age: '6 лет',
+      height: 115.0,
+      weight: 20.0,
+      description:
+      'В 6 лет ребенок начинает читать и писать, активно общается с сверстниками и осваивает базовые навыки самостоятельности.',
+      nutritionRecommendations:
+      'Обратите внимание на полноценное питание с достаточным количеством белков, витаминов и минералов для поддержания активности.',
+    ),
+    ChildGrowthData(
+      age: '7 лет',
+      height: 121.0,
+      weight: 22.0,
+      description:
+      'В 7 лет ребенок укрепляет социальные навыки, начинает понимать правила поведения и сотрудничать в группе.',
+      nutritionRecommendations:
+      'Сбалансированный рацион с включением здоровых перекусов, таких как орехи, йогурт или свежие фрукты.',
+    ),
+    ChildGrowthData(
+      age: '8 лет',
+      height: 127.0,
+      weight: 24.0,
+      description:
+      'В 8 лет ребенок активно занимается спортом или творческими занятиями, развивая координацию и физическую выносливость.',
+      nutritionRecommendations:
+      'Следите за достаточным потреблением кальция и витамина D для поддержки костной системы, а также за общим сбалансированным питанием.',
+    ),
+    ChildGrowthData(
+      age: '9 лет',
+      height: 133.0,
+      weight: 26.0,
+      description:
+      'В 9 лет ребенок расширяет кругозор, начинает самостоятельно выполнять задания и решать небольшие проблемы.',
+      nutritionRecommendations:
+      'Регулярные приемы пищи с умеренными порциями, достаточным количеством овощей, фруктов и цельнозерновых продуктов.',
+    ),
+    ChildGrowthData(
+      age: '10 лет',
+      height: 138.0,
+      weight: 28.0,
+      description:
+      'В 10 лет ребенок демонстрирует повышенную самостоятельность, учится брать ответственность за учебные задания.',
+      nutritionRecommendations:
+      'Сбалансированный рацион с достаточным количеством белков, углеводов и жиров для поддержания энергии в течение дня.',
+    ),
+    ChildGrowthData(
+      age: '11 лет',
+      height: 143.0,
+      weight: 32.0,
+      description:
+      'В 11 лет начинается активное развитие физических способностей, ребенок интересуется спортом и командными играми.',
+      nutritionRecommendations:
+      'Рацион с включением сложных углеводов, нежирного мяса, свежих овощей и фруктов для поддержки роста и активности.',
+    ),
+    ChildGrowthData(
+      age: '12 лет',
+      height: 148.0,
+      weight: 36.0,
+      description:
+      'В 12 лет ребенок переживает переходный период с эмоциональными и физическими изменениями, интересуется самоопределением.',
+      nutritionRecommendations:
+      'Сбалансированное питание, включающее разнообразные группы продуктов, поможет справиться с гормональными изменениями и поддерживать энергию.',
+    ),
+    ChildGrowthData(
+      age: '13 лет',
+      height: 157.0,
+      weight: 40.0,
+      description:
+      'В 13 лет начинается формирование индивидуальности, ребенок проявляет первые признаки самостоятельного мышления.',
+      nutritionRecommendations:
+      'Увеличьте потребление белка и овощей, а также обеспечьте регулярный прием пищи для поддержки интенсивного роста.',
+    ),
+    ChildGrowthData(
+      age: '14 лет',
+      height: 163.0,
+      weight: 45.0,
+      description:
+      'В 14 лет подросток активно развивается, появляются новые увлечения и меняется отношение к окружающему миру.',
+      nutritionRecommendations:
+      'Сбалансированный рацион с включением сложных углеводов, белков и полезных жиров будет способствовать здоровому развитию.',
+    ),
+    ChildGrowthData(
+      age: '15 лет',
+      height: 168.0,
+      weight: 50.0,
+      description:
+      'В 15 лет подросток продолжает формировать свою личность, сталкивается с новыми социальными вызовами и ответственностью.',
+      nutritionRecommendations:
+      'Обеспечьте достаточное количество энергии и питательных веществ, особенно во время активных физических нагрузок и учебы.',
+    ),
+    ChildGrowthData(
+      age: '16 лет',
+      height: 172.0,
+      weight: 55.0,
+      description:
+      'В 16 лет подросток становится более самостоятельным, развивается критическое мышление и уверенность в себе.',
+      nutritionRecommendations:
+      'Включайте в рацион продукты, богатые антиоксидантами, и следите за балансом белков, жиров и углеводов.',
+    ),
+    ChildGrowthData(
+      age: '17 лет',
+      height: 175.0,
+      weight: 60.0,
+      description:
+      'В 17 лет подросток готовится ко взрослой жизни, определяются жизненные приоритеты и цели, формируется мировоззрение.',
+      nutritionRecommendations:
+      'Разнообразное питание с упором на свежие овощи, фрукты, цельнозерновые продукты и качественный белок станет хорошей базой для активного развития.',
+    ),
+    ChildGrowthData(
+      age: '18 лет',
+      height: 177.0,
+      weight: 65.0,
+      description:
+      'В 18 лет молодой человек завершает этап подросткового развития и готовится к самостоятельной взрослой жизни.',
+      nutritionRecommendations:
+      'Полноценное, сбалансированное питание, соблюдение режима дня и активный образ жизни помогут плавно перейти во взрослую жизнь.',
+    ),
+  ];
 
   @override
-  void initState() {
-    super.initState();
-    _loadData().then((_) {
-      if (birthDate == null) {
-        _showBirthDateDialog();
-      }
-    });
-  }
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: LayoutBuilder(builder: (context, constraints) {
+        double horizontalMargin = constraints.maxWidth * 0.04;
+        double columnSpacing = constraints.maxWidth * 0.08;
+        if (horizontalMargin < 16.0) horizontalMargin = 16.0;
+        if (columnSpacing < 40.0) columnSpacing = 40.0;
 
-  /// Сохранение данных
-  Future<void> _saveData() async {
-    final sp = await SharedPreferences.getInstance();
-    if (birthDate != null) {
-      sp.setString('gt_birth_date', birthDate!.toIso8601String());
-    }
-    final measJson = jsonEncode(measurements.map((m) => m.toJson()).toList());
-    sp.setString('gt_measurements', measJson);
-    sp.setInt('gt_metric', selectedMetric.index);
-  }
-
-  /// Загрузка данных
-  Future<void> _loadData() async {
-    final sp = await SharedPreferences.getInstance();
-    final bdStr = sp.getString('gt_birth_date');
-    if (bdStr != null) {
-      birthDate = DateTime.tryParse(bdStr);
-    }
-    final measStr = sp.getString('gt_measurements');
-    if (measStr != null) {
-      final list = jsonDecode(measStr) as List;
-      measurements.clear();
-      measurements.addAll(list.map((j) => UserMeasurement.fromJson(j)));
-    }
-    final metricIdx = sp.getInt('gt_metric');
-    if (metricIdx != null && metricIdx < MetricType.values.length) {
-      selectedMetric = MetricType.values[metricIdx];
-    }
-    setState(() {});
-  }
-
-  /// Диалог выбора даты рождения (формат: дд ММММ гггг, месяц на русском)
-  void _showBirthDateDialog() {
-    final now = DateTime.now();
-    final init = birthDate ?? DateTime(now.year - 1, now.month, now.day);
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        DateTime temp = init;
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: SizedBox(
-            height: 320,
-            child: Column(
-              children: [
-                const SizedBox(height: 16),
-                Text(
-                  'Дата рождения ребёнка',
-                  style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                Expanded(
-                  child: Localizations.override(
-                    context: ctx,
-                    locale: const Locale('ru', 'RU'),
-                    child: CupertinoDatePicker(
-                      mode: CupertinoDatePickerMode.date,
-                      initialDateTime: temp,
-                      minimumDate: DateTime(1900),
-                      maximumDate: now,
-                      onDateTimeChanged: (picked) {
-                        temp = picked;
-                      },
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Рост и вес ребенка'),
+            backgroundColor: AppColors.kMintDark,
+          ),
+          body: Column(
+            children: [
+              const SizedBox(height: 16.0),
+              ToggleButtons(
+                isSelected: [
+                  _selectedMeasurement == MeasurementType.height,
+                  _selectedMeasurement == MeasurementType.weight,
+                ],
+                onPressed: (int index) {
+                  setState(() {
+                    _selectedMeasurement =
+                    (index == 0) ? MeasurementType.height : MeasurementType.weight;
+                  });
+                },
+                borderRadius: BorderRadius.circular(8.0),
+                selectedColor: Colors.white,
+                fillColor: AppColors.kMintDark,
+                children: const [
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text('Рост'),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text('Вес'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16.0),
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.vertical,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minWidth: constraints.maxWidth,
+                      ),
+                      child: DataTable(
+                        headingRowColor: MaterialStateProperty.all(AppColors.kMintLight),
+                        horizontalMargin: horizontalMargin,
+                        columnSpacing: columnSpacing,
+                        headingRowHeight: 48.0,
+                        dataRowHeight: 48.0,
+                        columns: _buildColumns(),
+                        rows: childGrowthData
+                            .map((data) => _buildDataRow(data, context))
+                            .toList(),
+                      ),
                     ),
                   ),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Отмена'),
-                    ),
-                    ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          birthDate = temp;
-                        });
-                        _saveData();
-                        Navigator.pop(ctx);
-                      },
-                      style: ElevatedButton.styleFrom(backgroundColor: AppColors.kMintDark),
-                      child: const Text('Сохранить'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-              ],
-            ),
+              ),
+            ],
           ),
         );
-      },
+      }),
     );
   }
 
-  /// Переключатель: Рост / Вес
-  Widget _buildMetricSwitcher() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        ElevatedButton(
-          onPressed: () {
-            setState(() {
-              selectedMetric = MetricType.height;
-            });
-            _saveData();
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: (selectedMetric == MetricType.height)
-                ? AppColors.kMintDark
-                : Colors.white,
-          ),
-          child: Text(
-            'Рост',
-            style: TextStyle(
-              color: (selectedMetric == MetricType.height)
-                  ? Colors.white
-                  : AppColors.kMintDark,
-            ),
-          ),
+  List<DataColumn> _buildColumns() {
+    return [
+      DataColumn(
+        label: Text(
+          'Возраст',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white),
         ),
-        const SizedBox(width: 12),
-        ElevatedButton(
-          onPressed: () {
-            setState(() {
-              selectedMetric = MetricType.weight;
-            });
-            _saveData();
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: (selectedMetric == MetricType.weight)
-                ? AppColors.kMintDark
-                : Colors.white,
+      ),
+      DataColumn(
+        label: Text(
+          _selectedMeasurement == MeasurementType.height ? 'Рост (см)' : 'Вес (кг)',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: Colors.white),
+        ),
+      ),
+    ];
+  }
+
+  DataRow _buildDataRow(ChildGrowthData data, BuildContext context) {
+    final measurementValue =
+    _selectedMeasurement == MeasurementType.height ? data.height : data.weight;
+
+    return DataRow(
+      cells: [
+        DataCell(
+          Text(
+            data.age,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.kMintDark),
           ),
-          child: Text(
-            'Вес',
-            style: TextStyle(
-              color: (selectedMetric == MetricType.weight)
-                  ? Colors.white
-                  : AppColors.kMintDark,
-            ),
+          onTap: () => _showDetails(context, data),
+        ),
+        DataCell(
+          Text(
+            measurementValue.toStringAsFixed(1),
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.kMintDark),
           ),
         ),
       ],
     );
   }
 
-  /// Кнопка «Подробнее…» — показывает официальные данные (1..36)
-  void _showDetailOfficialData() {
-    final isWeight = (selectedMetric == MetricType.weight);
-    final data = isWeight ? weightOfficialData : growthOfficialData;
-    final unit = isWeight ? 'кг' : 'см';
-    final title = isWeight ? 'Подробнее о весе' : 'Подробнее о росте';
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: Text(title),
-          content: SizedBox(
-            width: MediaQuery.of(ctx).size.width * 0.9,
-            height: MediaQuery.of(ctx).size.height * 0.6,
-            child: SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    isWeight
-                        ? 'Ниже приведены примерные официальные данные по весу (1..36 мес).'
-                        : 'Ниже приведены примерные официальные данные по росту (1..36 мес).',
-                    style: GoogleFonts.roboto(fontSize: 14),
-                  ),
-                  const SizedBox(height: 16),
-                  ...List.generate(36, (i) {
-                    final m = i + 1;
-                    final val = data[i];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Text(
-                        'В $m мес: $val $unit',
-                        style: GoogleFonts.roboto(fontSize: 14),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Закрыть'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Диалог "Добавить замер"
-  void _showAddMeasurementDialog() {
-    final valCtrl = TextEditingController();
-    DateTime? measureDate;
+  void _showDetails(BuildContext context, ChildGrowthData data) {
+    // В зависимости от выбранного режима показываем описание развития или рекомендации по питанию
+    final String title = data.age;
+    final String content = _selectedMeasurement == MeasurementType.height
+        ? data.description
+        : data.nutritionRecommendations;
+    final String contentTitle = _selectedMeasurement == MeasurementType.height
+        ? 'Этап развития'
+        : 'Рекомендации по питанию';
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-          ),
-          child: StatefulBuilder(
-            builder: (context, setStateSB) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    selectedMetric == MetricType.weight ? 'Добавить вес' : 'Добавить рост',
-                    style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: valCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: selectedMetric == MetricType.weight ? 'Вес (кг)' : 'Рост (см)',
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text(
-                        'Дата: ',
-                        style: GoogleFonts.roboto(fontSize: 15, fontWeight: FontWeight.w500),
-                      ),
-                      Text(
-                        measureDate == null
-                            ? 'не выбрана'
-                            : DateFormat('dd MMMM yyyy', 'ru').format(measureDate!),
-                        style: GoogleFonts.roboto(fontWeight: FontWeight.bold),
-                      ),
-                      const Spacer(),
-                      ElevatedButton(
-                        onPressed: () {
-                          final now = DateTime.now();
-                          final init = measureDate ?? now;
-                          final minD = birthDate ?? DateTime(1900);
-                          showDialog(
-                            context: context,
-                            builder: (c2) {
-                              DateTime tmp = init;
-                              return Localizations.override(
-                                context: c2,
-                                locale: const Locale('ru', 'RU'),
-                                child: Dialog(
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  child: SizedBox(
-                                    height: 300,
-                                    child: Column(
-                                      children: [
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          'Выберите дату замера',
-                                          style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold),
-                                        ),
-                                        Expanded(
-                                          child: CupertinoDatePicker(
-                                            mode: CupertinoDatePickerMode.date,
-                                            initialDateTime: init,
-                                            minimumDate: minD,
-                                            maximumDate: now,
-                                            onDateTimeChanged: (picked) {
-                                              tmp = picked;
-                                            },
-                                          ),
-                                        ),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            TextButton(
-                                              onPressed: () => Navigator.pop(c2),
-                                              child: const Text('Отмена'),
-                                            ),
-                                            ElevatedButton(
-                                              onPressed: () {
-                                                setStateSB(() {
-                                                  measureDate = tmp;
-                                                });
-                                                Navigator.pop(c2);
-                                              },
-                                              style: ElevatedButton.styleFrom(backgroundColor: AppColors.kMintDark),
-                                              child: const Text('Ок'),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 12),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.kMintDark),
-                        child: const Text('Выбрать дату'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Отмена'),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: () {
-                          final raw = valCtrl.text.replaceAll(',', '.');
-                          final parsed = double.tryParse(raw);
-                          if (parsed == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Неверный формат числа')),
-                            );
-                            return;
-                          }
-                          if (measureDate == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Дата не выбрана')),
-                            );
-                            return;
-                          }
-                          if (birthDate != null && measureDate!.isBefore(birthDate!)) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Дата не может быть раньше рождения')),
-                            );
-                            return;
-                          }
-                          if (measureDate!.isAfter(DateTime.now())) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Дата не может быть в будущем')),
-                            );
-                            return;
-                          }
-                          double finalVal = parsed;
-                          if (selectedMetric == MetricType.weight) {
-                            if (finalVal < 1) finalVal = 1;
-                            if (finalVal > 30) finalVal = 30;
-                          } else {
-                            if (finalVal < 40) finalVal = 40;
-                            if (finalVal > 120) finalVal = 120;
-                          }
-                          setState(() {
-                            measurements.add(UserMeasurement(
-                              date: measureDate!,
-                              value: finalVal,
-                              type: selectedMetric,
-                            ));
-                          });
-                          _saveData();
-                          Navigator.pop(ctx);
-                        },
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.kMintDark),
-                        child: const Text('Сохранить'),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  /// Диалог "Редактировать замер"
-  void _showEditMeasurementDialog(UserMeasurement um) {
-    final valCtrl = TextEditingController(text: um.value.toString());
-    DateTime measureDate = um.date;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 16,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + 16,
-          ),
-          child: StatefulBuilder(
-            builder: (context, setStateSB) {
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    selectedMetric == MetricType.weight ? 'Редактировать вес' : 'Редактировать рост',
-                    style: GoogleFonts.roboto(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: valCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: selectedMetric == MetricType.weight ? 'Вес (кг)' : 'Рост (см)',
-                      border: const OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Text('Дата: ', style: GoogleFonts.roboto(fontSize: 15, fontWeight: FontWeight.w500)),
-                      Text(
-                        DateFormat('dd MMMM yyyy', 'ru').format(measureDate),
-                        style: GoogleFonts.roboto(fontWeight: FontWeight.bold),
-                      ),
-                      const Spacer(),
-                      ElevatedButton(
-                        onPressed: () {
-                          final now = DateTime.now();
-                          final init = measureDate;
-                          final minD = birthDate ?? DateTime(1900);
-                          showDialog(
-                            context: context,
-                            builder: (c2) {
-                              DateTime tmp = init;
-                              return Localizations.override(
-                                context: c2,
-                                locale: const Locale('ru', 'RU'),
-                                child: Dialog(
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  child: SizedBox(
-                                    height: 300,
-                                    child: Column(
-                                      children: [
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          'Выберите дату замера',
-                                          style: GoogleFonts.roboto(fontSize: 16, fontWeight: FontWeight.bold),
-                                        ),
-                                        Expanded(
-                                          child: CupertinoDatePicker(
-                                            mode: CupertinoDatePickerMode.date,
-                                            initialDateTime: init,
-                                            minimumDate: minD,
-                                            maximumDate: now,
-                                            onDateTimeChanged: (picked) {
-                                              tmp = picked;
-                                            },
-                                          ),
-                                        ),
-                                        Row(
-                                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                          children: [
-                                            TextButton(
-                                              onPressed: () => Navigator.pop(c2),
-                                              child: const Text('Отмена'),
-                                            ),
-                                            ElevatedButton(
-                                              onPressed: () {
-                                                setStateSB(() {
-                                                  measureDate = tmp;
-                                                });
-                                                Navigator.pop(c2);
-                                              },
-                                              style: ElevatedButton.styleFrom(backgroundColor: AppColors.kMintDark),
-                                              child: const Text('Ок'),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 12),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.kMintDark),
-                        child: const Text('Выбрать дату'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Отмена'),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton(
-                        onPressed: () {
-                          final raw = valCtrl.text.replaceAll(',', '.');
-                          final parsed = double.tryParse(raw);
-                          if (parsed == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Неверный формат числа')),
-                            );
-                            return;
-                          }
-                          if (birthDate != null && measureDate.isBefore(birthDate!)) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Дата не может быть раньше рождения')),
-                            );
-                            return;
-                          }
-                          if (measureDate.isAfter(DateTime.now())) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Дата не может быть в будущем')),
-                            );
-                            return;
-                          }
-                          double finalVal = parsed;
-                          if (selectedMetric == MetricType.weight) {
-                            if (finalVal < 1) finalVal = 1;
-                            if (finalVal > 30) finalVal = 30;
-                          } else {
-                            if (finalVal < 40) finalVal = 40;
-                            if (finalVal > 120) finalVal = 120;
-                          }
-                          setState(() {
-                            um.value = finalVal;
-                            um.date = measureDate;
-                          });
-                          _saveData();
-                          Navigator.pop(ctx);
-                        },
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.kMintDark),
-                        child: const Text('Сохранить'),
-                      ),
-                    ],
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  /// Построение графика (5 линий процентилей + пользовательская линия)
-  Widget _buildChart() {
-    // Для простоты в этом примере оставим использование growthOfficialData и weightOfficialData как единственной официальной линии.
-    // Но ниже мы добавляем дополнительные горизонтальные линии для отклонений.
-    final official = <FlSpot>[];
-    double minY, maxY;
-    if (selectedMetric == MetricType.weight) {
-      minY = 1;
-      maxY = 30;
-      for (int i = 0; i < 36; i++) {
-        official.add(FlSpot((i + 1).toDouble(), weightOfficialData[i]));
-      }
-    } else {
-      minY = 40;
-      maxY = 120;
-      for (int i = 0; i < 36; i++) {
-        official.add(FlSpot((i + 1).toDouble(), growthOfficialData[i]));
-      }
-    }
-
-    final user = <FlSpot>[];
-    if (birthDate != null) {
-      final base = birthDate!;
-      final filtered = measurements.where((m) => m.type == selectedMetric).toList()
-        ..sort((a, b) => a.date.compareTo(b.date));
-      for (final f in filtered) {
-        final days = f.date.difference(base).inDays;
-        double x = (days / 30.0).roundToDouble();
-        if (x < 1) x = 1;
-        if (x > 36) x = 36;
-        double y = f.value;
-        if (y < minY) y = minY;
-        if (y > maxY) y = maxY;
-        user.add(FlSpot(x, y));
-      }
-    }
-
-    return LineChart(
-      LineChartData(
-        extraLinesData: ExtraLinesData(
-          horizontalLines: selectedMetric == MetricType.weight
-              ? [
-            // Для веса: красные линии (значительное отклонение)
-            HorizontalLine(
-              y: 3,
-              color: AppColors.redLine,
-              strokeWidth: 1,
-              dashArray: [5, 5],
-            ),
-            HorizontalLine(
-              y: 16,
-              color: AppColors.redLine,
-              strokeWidth: 1,
-              dashArray: [5, 5],
-            ),
-            // Для веса: оранжевые линии (незначительное отклонение)
-            HorizontalLine(
-              y: 3.5,
-              color: AppColors.orangeLine,
-              strokeWidth: 1,
-              dashArray: [5, 5],
-            ),
-            HorizontalLine(
-              y: 15,
-              color: AppColors.orangeLine,
-              strokeWidth: 1,
-              dashArray: [5, 5],
-            ),
-          ]
-              : [
-            // Для роста: красные линии
-            HorizontalLine(
-              y: 45,
-              color: AppColors.redLine,
-              strokeWidth: 1,
-              dashArray: [5, 5],
-            ),
-            HorizontalLine(
-              y: 105,
-              color: AppColors.redLine,
-              strokeWidth: 1,
-              dashArray: [5, 5],
-            ),
-            // Для роста: оранжевые линии
-            HorizontalLine(
-              y: 50,
-              color: AppColors.orangeLine,
-              strokeWidth: 1,
-              dashArray: [5, 5],
-            ),
-            HorizontalLine(
-              y: 100,
-              color: AppColors.orangeLine,
-              strokeWidth: 1,
-              dashArray: [5, 5],
-            ),
-          ],
-        ),
-        minX: 1,
-        maxX: 36,
-        minY: minY,
-        maxY: maxY,
-        clipData: const FlClipData.all(),
-        lineTouchData: LineTouchData(
-          enabled: true,
-          handleBuiltInTouches: true,
-          touchTooltipData: LineTouchTooltipData(
-            getTooltipItems: (spots) {
-              return spots.map((barSpot) {
-                final val = barSpot.y.toStringAsFixed(1);
-                final xM = barSpot.x.toStringAsFixed(0);
-                return LineTooltipItem(
-                  '$val\n$xM',
-                  const TextStyle(color: Colors.black),
-                );
-              }).toList();
-            },
-          ),
-        ),
-        titlesData: FlTitlesData(
-          bottomTitles: AxisTitles(
-            axisNameWidget: selectedMetric == MetricType.weight
-                ? const Text('Месяц (вес)')
-                : const Text('Месяц (рост)'),
-            axisNameSize: 18,
-            sideTitles: SideTitles(
-              showTitles: true,
-              interval: 1,
-              getTitlesWidget: (val, meta) {
-                if (val >= 1 && val <= 36 && val % 1 == 0) {
-                  // Поворачиваем подписи на -90° и выводим только число
-                  return Transform.rotate(
-                    angle: -math.pi / 2,
-                    child: Text('${val.toInt()}', style: const TextStyle(fontSize: 10)),
-                  );
-                }
-                return const SizedBox();
-              },
-            ),
-          ),
-          leftTitles: AxisTitles(
-            axisNameWidget: selectedMetric == MetricType.weight
-                ? const Text('Вес (кг)')
-                : const Text('Рост (см)'),
-            axisNameSize: 18,
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (val, meta) {
-                if (selectedMetric == MetricType.weight) {
-                  final v = val.round();
-                  if (v < 1 || v > 30) return const SizedBox();
-                  if (v % 2 == 0) return Text('$v', style: const TextStyle(fontSize: 10));
-                  return const SizedBox();
-                } else {
-                  final v = val.round();
-                  if (v < 40 || v > 120) return const SizedBox();
-                  if (v % 5 == 0) return Text('$v', style: const TextStyle(fontSize: 10));
-                  return const SizedBox();
-                }
-              },
-            ),
-          ),
-          rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        ),
-        gridData: FlGridData(
-          show: true,
-          horizontalInterval: selectedMetric == MetricType.weight ? 2 : 5,
-          verticalInterval: 1,
-        ),
-        borderData: FlBorderData(show: true),
-        lineBarsData: [
-          // Официальная линия – зелёная (p50)
-          LineChartBarData(
-            spots: official,
-            isCurved: true,
-            color: AppColors.greenLine,
-            barWidth: 3,
-            dotData: FlDotData(show: false),
-          ),
-          // Пользовательская линия – синяя
-          LineChartBarData(
-            spots: user,
-            isCurved: false,
-            color: AppColors.blueLine,
-            barWidth: 3,
-            dotData: FlDotData(show: true),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Список замеров
-  Widget _buildMeasurementsList() {
-    final filtered = measurements.where((m) => m.type == selectedMetric).toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
-    if (filtered.isEmpty) {
-      return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade300,
-              offset: const Offset(2, 2),
-              blurRadius: 4,
-            ),
-          ],
-        ),
-        child: const Center(child: Text('Нет данных. Нажмите «Добавить…»')),
-      );
-    }
-    final df = DateFormat('dd MMMM yyyy', 'ru');
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade300,
-            offset: const Offset(2, 2),
-            blurRadius: 4,
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  selectedMetric == MetricType.weight ? 'Вес (кг)' : 'Рост (см)',
-                  style: GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  'Дата',
-                  style: GoogleFonts.roboto(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-              ),
-              const SizedBox(width: 80),
-            ],
-          ),
-          const Divider(),
-          ListView.builder(
-            itemCount: filtered.length,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemBuilder: (ctx, i) {
-              final item = filtered[i];
-              final dateStr = df.format(item.date);
-              final valStr = selectedMetric == MetricType.weight ? '${item.value} кг' : '${item.value} см';
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  children: [
-                    Expanded(child: Text(valStr)),
-                    Expanded(child: Text(dateStr)),
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () {
-                        _showEditMeasurementDialog(item);
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      onPressed: () {
-                        setState(() {
-                          measurements.removeWhere((m) =>
-                          m.date == item.date &&
-                              m.value == item.value &&
-                              m.type == item.type);
-                        });
-                        _saveData();
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final noBirth = (birthDate == null);
-    return Scaffold(
       backgroundColor: AppColors.kBackground,
-      appBar: AppBar(
-        title: const Text('Рост / Вес ребёнка'),
-        centerTitle: true,
-        backgroundColor: AppColors.kMintDark,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_month),
-            tooltip: 'Выбрать дату рождения',
-            onPressed: _showBirthDateDialog,
-          ),
-        ],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16.0)),
       ),
-      body: SafeArea(
-        child: noBirth
-            ? Center(
-          child: ElevatedButton(
-            onPressed: _showBirthDateDialog,
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.kMintDark),
-            child: const Text('Выбрать дату рождения'),
-          ),
-        )
-            : SingleChildScrollView(
-          child: Column(
-            children: [
-              // Карточка с графиком
-              Container(
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.shade300,
-                      offset: const Offset(2, 2),
-                      blurRadius: 4,
-                    ),
-                  ],
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Column(
-                    children: [
-                      SizedBox(height: 400, child: _buildChart()),
-                      const SizedBox(height: 8),
-                      _buildMetricSwitcher(),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: _showDetailOfficialData,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(color: AppColors.kMintDark, width: 1),
-                        ),
-                        child: Text(
-                          selectedMetric == MetricType.weight ? 'Подробнее о весе' : 'Подробнее о росте',
-                          style: const TextStyle(color: AppColors.kMintDark),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: _showAddMeasurementDialog,
-                        style: ElevatedButton.styleFrom(backgroundColor: AppColors.kMintDark),
-                        child: Text(
-                          selectedMetric == MetricType.weight ? 'Добавить вес' : 'Добавить рост',
-                        ),
-                      ),
-                    ],
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 20.0,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.kMintDark,
                   ),
                 ),
-              ),
-              // Список замеров
-              _buildMeasurementsList(),
-            ],
+                const SizedBox(height: 8.0),
+                Text(
+                  contentTitle,
+                  style: const TextStyle(
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.kMintDark,
+                  ),
+                ),
+                const SizedBox(height: 8.0),
+                Text(
+                  content,
+                  style: const TextStyle(fontSize: 16.0, color: AppColors.kMintDark),
+                ),
+                const SizedBox(height: 16.0),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.kMintDark,
+                    ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Закрыть'),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

@@ -41,7 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         content: const Text(
           'Если вы заметили какие-либо ошибки или недочёты в работе приложения, '
               'пожалуйста, сообщите нам об этом по электронной почте:\n'
-              'mozol.dima97@mail.ru\n\n'
+              'dmitrymozol.dev@gmail.com\n\n'
               'Ваш отзыв поможет нам сделать приложение ещё лучше и удобнее для всех пользователей!',
         ),
         actions: [

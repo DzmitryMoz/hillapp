@@ -13,9 +13,10 @@ import '../medicine/medicine_screen.dart';
 import '../moms/for_moms_screen.dart';
 import 'profile_screen.dart';
 
+
 /// Цветовые константы – базовый цвет #00B4AB и его светлый вариант.
 const Color kMintLight = Color(0xFF00E5D1); // Светлый оттенок
-const Color kMintDark = Color(0xFF00B4AB);  // Базовый цвет #00B4AB
+const Color kMintDark = Color(0xFF00B4AB);  // Базовый цвет
 const Color kBackground = Color(0xFFE3FDFD);
 
 class HomeScreen extends StatefulWidget {
@@ -220,13 +221,17 @@ class __HomePageState extends State<_HomePage> {
     Navigator.pushNamed(context, '/analysis_main');
   }
 
+  // Метод перехода на экран калькулятора ИМТ.
   void _goMedicationCalculator() {
     Navigator.pushNamed(context, '/medication_calculator');
   }
 
+
+
   @override
   Widget build(BuildContext context) {
-    // Получение последних показателей из Provider
+    // Получаем данные здоровья из Provider (HealthData),
+    // чтобы, например, отобразить последний показатель АД/ЧСС
     final healthData = Provider.of<HealthData>(context);
     final latestMeasurement = healthData.latestMeasurement;
 
@@ -333,6 +338,7 @@ class __HomePageState extends State<_HomePage> {
             onTap: _goBloodPressure,
           ),
           const SizedBox(height: 12),
+
           // 6. Кнопка "Расшифровка анализов"
           _buildGradientCardButton(
             title: 'Расшифровка анализов',
@@ -342,6 +348,7 @@ class __HomePageState extends State<_HomePage> {
             onTap: _goAnalysisDecryption,
           ),
           const SizedBox(height: 12),
+
           // 7. Кнопка "Калькулятор ИМТ"
           _buildGradientCardButton(
             title: 'Калькулятор ИМТ',
@@ -350,6 +357,9 @@ class __HomePageState extends State<_HomePage> {
             gradientColors: [kMintLight, kMintDark],
             onTap: _goMedicationCalculator,
           ),
+          const SizedBox(height: 12),
+
+
         ],
       ),
     );
@@ -362,7 +372,11 @@ class __HomePageState extends State<_HomePage> {
     final diastolic = measurement.diastolic;
     final heartRate = measurement.heartRate;
 
-    // -------------------- Балльная классификация для систолического давления --------------------
+    // ----------------------------
+    // Ниже просто пример логики:
+    // ----------------------------
+
+    // Балльная классификация для систолического давления
     int sbpScore;
     if (systolic < 100) {
       sbpScore = 1; // Низкое
@@ -380,7 +394,7 @@ class __HomePageState extends State<_HomePage> {
       sbpScore = 7; // 3 степень (тяжёлая)
     }
 
-    // -------------------- Балльная классификация для диастолического давления --------------------
+    // Балльная классификация для диастолического давления
     int dbpScore;
     if (diastolic < 60) {
       dbpScore = 1; // Низкое
@@ -438,7 +452,7 @@ class __HomePageState extends State<_HomePage> {
         adColor = Colors.grey;
     }
 
-    // -------------------- Классификация для ЧСС --------------------
+    // Классификация для ЧСС
     String hrStatus = ' (Нормальное)';
     Color hrColor = Colors.green;
     if (heartRate < 60) {
@@ -483,7 +497,7 @@ class __HomePageState extends State<_HomePage> {
               ],
             ),
             const Divider(thickness: 1, height: 24),
-            // Две "плитки": левая - АД, правая - ЧСС
+            // Плитки для АД и ЧСС
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -693,13 +707,15 @@ class __HomePageState extends State<_HomePage> {
         borderRadius: BorderRadius.circular(12),
       ),
       child: ListTile(
-        contentPadding:
-        const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         leading: CircleAvatar(
           backgroundColor: kMintDark,
           radius: 14,
-          child: const Icon(Icons.medical_services,
-              color: Colors.white, size: 18),
+          child: const Icon(
+            Icons.medical_services,
+            color: Colors.white,
+            size: 18,
+          ),
         ),
         title: Text(
           name,
@@ -708,7 +724,6 @@ class __HomePageState extends State<_HomePage> {
         subtitle: Text(
           'Дозировка: $dosage $unit\nВремя: $timeText, Приём: $intakeTypeLabel',
         ),
-        // Креативная кнопка "Принял", оформленная в стиле общего дизайна
         trailing: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
@@ -733,8 +748,7 @@ class __HomePageState extends State<_HomePage> {
               style: TextStyle(color: Colors.white, fontSize: 12),
             ),
             style: TextButton.styleFrom(
-              padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               backgroundColor: Colors.transparent,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
@@ -751,7 +765,7 @@ class __HomePageState extends State<_HomePage> {
     });
   }
 
-  // Карточка-кнопка (универсальная)
+  // Универсальная карточка-кнопка с градиентным фоном
   Widget _buildGradientCardButton({
     required String title,
     required String description,
